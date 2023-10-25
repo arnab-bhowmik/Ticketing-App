@@ -1,0 +1,17 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+manifests:
+  rawYaml:
+  - ./infra/k8s/*
+build:
+  local: 
+    push: false
+  artifacts:
+    - image: arnab17/ticketing-app-auth-service
+      context: auth-service
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: 'src/**/*.ts'
+            dest: .
