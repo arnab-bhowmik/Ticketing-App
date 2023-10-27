@@ -19,18 +19,11 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
 
     // === Updated Code ===
     if (err instanceof RequestValidationError) {
-        const formattedErrors = err.errors.map((error) => {
-          if (error.type === 'field') {
-            return { message: error.msg, field: error.path };
-          }
-        });
-        return res.status(400).send({ errors: formattedErrors });
-        console.log('Handling this error as Request Validation Error!');
+        return res.status(err.statusCode).send({ errors: err.serializeErrors() });
     }
 
     if (err instanceof DatabaseConnectionError) {
-        return res.status(500).send({ errors: [{ message: err.reason }] });
-        console.log('Handling this error as DB Connection Error!');
+        return res.status(err.statusCode).send({ errors: err.serializeErrors() });
     }
 
     res.status(400).send({ errors: [{ message: 'Unhandled Error!' }] });
