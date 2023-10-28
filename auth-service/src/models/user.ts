@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Password } from "../services/password-hashing";
 
 //Interface to define the properties the User Schema has
 interface UserAttribute {
@@ -27,20 +28,19 @@ const userSchema = new mongoose.Schema({
         required: true
     }
 });
+
+userSchema.pre('save', async function(done) {
+    if (this.isModified('password')) {
+        const hashedPassword = await Password.toHash(this.get('password'));
+        this.set('password', hashedPassword);
+    }
+    done();
+});
+
 userSchema.statics.build = (attribute: UserAttribute) => {
     return new User(attribute);
 }
 
 const User = mongoose.model<UserDoc, UserModel>('User', userSchema);
-
-// Sample Test Code!
-// const user = User.build({
-//     email: '',
-//     password: '' 
-// });
-
-// user.email
-// user.password
-
 
 export { User };
