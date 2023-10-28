@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { User } from '../models/user';
 import { RequestValidationError } from '../errors/request-validation-errors';
+import { BadRequestError } from '../errors/bad-request-errors';
 
 const router = express.Router();
 
@@ -21,20 +22,18 @@ router.post('/api/users/signup', [
             throw new RequestValidationError(errors.array());
         }
 
-        console.log('Signing Up new User...');
-
         const { email, password } = req.body;
         const existingUser = await User.findOne({ email });
         
         //Check if any User already exists with the same email
         if (existingUser) {
-            console.log('Provided Email already exists!');
-            return res.send({});
+            throw new BadRequestError('Email already exists!');
         } else {
             // Creat the User & save in corresponding MongoDB Collection
             const user = User.build({ email, password });
             await user.save();
             res.status(201).send(user);
+            console.log('Successfully signed Up new User...');
         }
 });
 
