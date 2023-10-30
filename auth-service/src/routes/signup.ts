@@ -38,7 +38,9 @@ router.post('/api/users/signup', [
             const userJWT = jwt.sign({
                 id: user.id,
                 email: user.email
-            }, 'arn');
+            }, 
+            process.env.JWT_KEY!
+            );
             //Save JWT on Cookie Session Object
             req.session = {
                 jwt: userJWT
