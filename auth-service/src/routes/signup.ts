@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/user';
 import { RequestValidationError } from '../errors/request-validation-errors';
 import { BadRequestError } from '../errors/bad-request-errors';
@@ -32,6 +33,17 @@ router.post('/api/users/signup', [
             // Creat the User & save in corresponding MongoDB Collection
             const user = User.build({ email, password });
             await user.save();
+
+            //Generate JSON Web Token
+            const userJWT = jwt.sign({
+                id: user.id,
+                email: user.email
+            }, 'arn');
+            //Save JWT on Cookie Session Object
+            req.session = {
+                jwt: userJWT
+            };
+
             res.status(201).send(user);
             console.log('Successfully signed Up new User...');
         }
