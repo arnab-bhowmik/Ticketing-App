@@ -24,7 +24,7 @@ router.post('/api/users/signup', [
         const { email, password } = req.body;
         const existingUser = await User.findOne({ email });
         
-        //Check if any User already exists with the same email
+        // Check if any User already exists with the same email
         if (existingUser) {
             throw new BadRequestError('Email already exists!');
         } else {
@@ -32,17 +32,11 @@ router.post('/api/users/signup', [
             const user = User.build({ email, password });
             await user.save();
 
-            //Generate JSON Web Token
-            const userJWT = jwt.sign({
-                id: user.id,
-                email: user.email
-            }, 
-            process.env.JWT_KEY!
-            );
-            //Save JWT on Cookie Session Object
-            req.session = {
-                jwt: userJWT
-            };
+            // Generate JSON Web Token
+            const userJWT = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_KEY!);
+
+            // Save JWT on Cookie Session Object
+            req.session = { jwt: userJWT };
 
             res.status(201).send(user);
             console.log('Successfully signed Up new User...');

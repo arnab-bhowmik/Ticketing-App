@@ -24,7 +24,7 @@ router.post('/api/users/signin', [
         const { email, password } = req.body;
         const existingUser = await User.findOne({ email });
 
-        //Check if a User exists with the provided email
+        // Check if a User exists with the provided email
         if (!existingUser) {
             throw new BadRequestError('User does not exist!');
         } else {
@@ -34,17 +34,11 @@ router.post('/api/users/signin', [
             if (!doesPasswordsMatch) {
                 throw new BadRequestError('Invalid credentials!');
             } else {
-                //Generate JSON Web Token
-                const userJWT = jwt.sign({
-                    id: existingUser.id,
-                    email: existingUser.email
-                }, 
-                process.env.JWT_KEY!
-                );
-                //Save JWT on Cookie Session Object
-                req.session = {
-                    jwt: userJWT
-                };
+                // Generate JSON Web Token
+                const userJWT = jwt.sign({ id: existingUser.id, email: existingUser.email }, process.env.JWT_KEY!);
+
+                // Save JWT on Cookie Session Object
+                req.session = { jwt: userJWT };
 
                 res.status(200).send(existingUser);
                 console.log('Successfully Signed In the User!');
