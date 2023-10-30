@@ -49,6 +49,7 @@ router.post('/api/users/signup', [
             res.status(201).send(user);
             console.log('Successfully signed Up new User...');
         }
-});
+    }
+);
 
 export { router as signUpRouter };
