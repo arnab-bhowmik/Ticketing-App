@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { RequestValidationError } from '../errors/request-validation-errors';
+import { body } from 'express-validator';
+
+import { validateRequest } from '../middlewares/validate-request';
 
 const router = express.Router();
 
@@ -12,13 +13,10 @@ router.post('/api/users/signin', [
      .trim()
      .notEmpty()
      .withMessage('Password is mandatory!')
-    ], (req: Request, res: Response) => {
-        // Check for any Validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            throw new RequestValidationError(errors.array());
-        }
-    }
+    ], 
+    // Check for any Validation errors
+    validateRequest,
+    (req: Request, res: Response) => {}
 );
 
 export { router as signInRouter };
