@@ -1,6 +1,11 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
+import request from "supertest";
 import { app } from '../app';
+
+declare global {
+    var authCookie: () => Promise<string[]>;
+}
 
 let mongo: any;
 process.env.JWT_KEY = 'arn';
@@ -29,3 +34,17 @@ afterAll(async () => {
     }
     await mongoose.connection.close();
 });
+
+// Have a cookie created on User Sign Up to be used by other test scripts 
+global.authCookie = async () => {
+    const email = 'user1@abc.com';
+    const password = 'abc123';
+
+    const response = await request(app)
+    .post('/api/users/signup')
+    .send({ email, password })
+    .expect(201);
+
+    const cookie = response.get('Set-Cookie');
+    return cookie;
+};
