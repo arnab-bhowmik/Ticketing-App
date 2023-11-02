@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Router from 'next/router';
 import { useState } from "react";
 import useRequest from '../../hooks/use-request';
 
@@ -10,7 +11,8 @@ export default () => {
         method: 'post',
         body: {
             email, password
-        }
+        },
+        onSuccess: () => Router.push('/')
     });
 
     const onSubmit = async (event) => {
