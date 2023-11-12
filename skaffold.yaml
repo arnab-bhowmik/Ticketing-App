@@ -7,7 +7,7 @@ build:
   local: 
     push: false
   artifacts:
-    - image: arnab17/ticketing-app-auth-service
+    - image: ticketing-app-auth-service
       context: auth-service
       docker:
         dockerfile: Dockerfile
@@ -15,7 +15,7 @@ build:
         manual:
           - src: 'src/**/*.ts'
             dest: .
-    - image: arnab17/ticketing-app-frontend-client
+    - image: ticketing-app-frontend-client
       context: client
       docker:
         dockerfile: Dockerfile

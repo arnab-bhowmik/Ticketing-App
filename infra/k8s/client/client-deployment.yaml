@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: arnab17/ticketing-app-frontend-client:latest
+          image: ticketing-app-frontend-client:latest
           imagePullPolicy: Never
 ---
 apiVersion: v1

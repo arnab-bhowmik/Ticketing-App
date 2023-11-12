@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: arnab17/ticketing-app-auth-service:latest
+          image: ticketing-app-auth-service:latest
           imagePullPolicy: Never
           env:
             - name: JWT_KEY
