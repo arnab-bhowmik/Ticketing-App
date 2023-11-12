@@ -18,7 +18,7 @@ build:
     - image: arnab17/ticketing-app-frontend-client
       context: client
       docker:
-        dockerfile: Dockerfile --forceExit
+        dockerfile: Dockerfile
       sync:
         manual:
           - src: '**/*.js'
