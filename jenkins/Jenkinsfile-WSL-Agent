@@ -29,11 +29,16 @@ pipeline {
             }
         }
         
-        stage('Skaffold: Build & Deploy Kubernetes Cluster') {
+        stage('Deploy Full-Stack Application on Kubernetes Cluster') {
             steps {
                 dir("${env.WORKSPACE}"){
                     echo "Current Directory is:"
                     sh "pwd"
+                    
+                    // Install the Ingress-Nginx Controler and setup the necesary Ingress service
+                    sh 'kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml'
+                    
+                    // Build the Application Docker Images & deploy on Kubernetes cluster via Skaffold
                     sh 'skaffold build -q | skaffold deploy --build-artifacts -'
                 }
             }
