@@ -1,0 +1,152 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout Git Repo') {
+            steps {
+                // Clone the Git Repo in the Agent
+                checkout scmGit(branches: [[name: '*/main']], extensions: [submodule(recursiveSubmodules: true, reference: '')], userRemoteConfigs: [[url: 'https://github.com/arnab-bhowmik/Ticketing-App.git']])
+            }
+        }
+        
+        stage('Install NPM Dependencies') {
+            steps {
+                dir("${env.WORKSPACE}/auth-service"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
+                dir("${env.WORKSPACE}/client"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
+                dir("${env.WORKSPACE}/Custom-Modules"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
+            }
+        }
+        
+        stage('Skaffold: Build & Deploy Kubernetes Cluster') {
+            steps {
+                dir("${env.WORKSPACE}"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'skaffold build -q | skaffold deploy --build-artifacts -'
+                }
+            }
+        }
+        
+        stage('Test APIs for User SignUp/SignIn/SignOut & Authentication') {
+            steps {
+                dir("${env.WORKSPACE}/auth-service"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm test'
+                }
+            }
+        }
+        
+        stage('Push Images to Docker Hub') {
+            environment {
+                DOCKER_IMAGE_NAMES = ' ' 
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${DOCKER_IMAGE_NAMES}"]) {
+                            sh '''
+                                docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+                                # Build and store the Docker Image details in JSON format
+                                skaffold build -q --dry-run > skaffold_build_result.json
+                                
+                                for item in $(cat skaffold_build_result.json | jq -c '.builds[]'); do
+                                    # Extract the image name and corresponding tag
+                                    echo "Extracting the image name and corresponding tag..."
+                                    imageName=$(echo "$item" | jq -r '.imageName')
+                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                    
+                                    # Tag the extracted Docker image before pushing to Docker Hub
+                                    echo "Tagging the extracted Docker image before pushing to Docker Hub"
+                                    docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
+                                
+                                    # Push the image to Docker Hub
+                                    echo "Pushing the image to Docker Hub"
+                                    docker push $DOCKER_HUB_USERNAME/$imageName:latest
+                                
+                                    # Print the results & delete the :latest tagged image
+                                    echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
+                                    docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
+                                    
+                                    # Save the image name as environment variable to access later for cleanup
+                                    updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
+                                    DOCKER_IMAGE_NAMES=$(echo $updatedArray | sed 's/^[,[:space:]]*//;s/[,[:space:]]*$//')
+                                    echo "Updated image name list: ${DOCKER_IMAGE_NAMES}"  
+                                done
+                                
+                                # Store the environment variable in a file to pass it to the next stage
+                                echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Cleanup WSL Agent Node') {
+            steps {
+                script {
+                    sh '''
+                        # Stop skaffold 
+                        echo "Stopping skaffold to clean up the deployed applications & services..."
+                        skaffold delete
+                        sleep 30
+                    '''
+                    
+                    // Access the environment variable from the prvious stage
+                    DOCKER_IMAGE_NAMES = readFile('docker_image_names.txt').trim()
+                    
+                    // Delete locally built Docker Images iterating on the names
+                    DOCKER_IMAGE_NAMES.tokenize(",").each { name ->
+                        sh """
+                            # Delete skaffold generated Docker images on the Agent Node
+                            echo "Deleting skaffold generated Docker image $name on the Agent Node"
+                            docker images --format "{{.Repository}}:{{.Tag}}" | grep "^$name:" | xargs -I {} docker rmi {}
+                        """
+                    }
+                    
+                    sh '''
+                        # Get the list of container IDs for created & exited containers
+                        created_container_ids=$(docker ps -aq -f status=created)
+                        exited_container_ids=$(docker ps -aq -f status=exited)
+                        
+                        # Remove created containers if the list is not empty 
+                        if [ -n "$created_container_ids" ]; then
+                            # Remove created containers
+                            docker rm -f $created_container_ids
+                            echo "Created containers removed"
+                        else
+                            echo "No created containers found"
+                        fi
+                        
+                        # Remove exited containers if the list is not empty
+                        if [ -n "$exited_container_ids" ]; then
+                            # Remove exited containers
+                            docker rm -f $exited_container_ids
+                            echo "Exited containers removed"
+                        else
+                            echo "No exited containers found"
+                        fi
+                        
+                        
+                        # Remove any dangling images thereafter
+                        echo "Removing any dangling images"
+                        docker image prune -f
+                    '''
+                }
+            }
+        }
+    }
+}
