@@ -2,90 +2,96 @@ pipeline {
     agent any
 
     stages {
-        stage('Install Pre-requisite Software & Tools') {
-            environment {
-                SUDO_PASSWORD = 'Jolly@2010' 
-            }
+        stage('Install required Software & Tools on Agent Node') {
             steps {
-                sh '''
-                    ## Switch to Root user
-                    echo "${SUDO_PASSWORD}" | sudo -S su
-                    
-                    ## Install basic utilities
-                    apt-get update && apt-get install -y curl jq 
-                    
-                    ## Install Skaffold...
-                    if !(skaffold version)
-                    then
-                        echo "Installing Skaffold"
-                        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && install skaffold /usr/local/bin/ && rm skaffold
-                    else
-                        echo "Skaffold is already installed"
-                    fi
-                    
-                    ## Install Docker...
-                    docker_version_output=$(docker -v 2>&1)
-                    if [ $? -eq 0 ]
-                    then
-                        echo "Docker is already installed"
-                    else
-                        echo "Installing Docker"
-                        # Remove any previously installed Docker packages
-                        for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
-                          apt-get remove $pkg 
-                        done
+                withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
+                    sh '''
+                        ## Switch to Root user
+                        echo "${SUDO_PASSWORD}" | sudo -SE su root
+                        whoami
                         
-                        # Add Docker official GPG key
-                        apt-get update
-                        apt-get install ca-certificates curl gnupg
-                        install -m 0755 -d /etc/apt/keyrings
-                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-                        chmod a+r /etc/apt/keyrings/docker.gpg
+                        ## Install basic utilities
+                        sudo apt-get update
+                        sudo apt-get install -y curl jq
                         
-                        # Add the repository to Apt sources
-                        echo \
-                          "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-                          "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-                          tee /etc/apt/sources.list.d/docker.list > /dev/null
-                        apt-get update
+                        ## Install Skaffold...
+                        if !(skaffold version)
+                        then
+                            echo "Installing Skaffold"
+                            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+                            sudo install skaffold /usr/local/bin/
+                        else
+                            echo "Skaffold is already installed"
+                        fi
                         
-                        # Install the latest version
-                        apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                        ## Install Docker...
+                        docker_version_output=$(docker -v 2>&1)
+                        if [ $? -eq 0 ]
+                        then
+                            echo "Docker is already installed"
+                        else
+                            echo "Installing Docker"
+                            # Remove any previously installed unofficial Docker packages
+                            for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
+                              sudo apt-get remove $pkg 
+                            done
+                            
+                            # Add Docker official GPG key
+                            sudo apt-get update
+                            sudo apt-get install ca-certificates curl gnupg
+                            sudo install -m 0755 -d /etc/apt/keyrings
+                            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+                            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+                            
+                            # Add the repository to Apt sources
+                            echo \
+                              "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+                              "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+                              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                            sudo apt-get update
+                            
+                            # Install the latest version
+                            sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                            
+                            # Test the installation
+                            sudo docker run hello-world
+                        fi
                         
-                        # Test the installation
-                        docker run hello-world
-                    fi
-                    
+                            
+                        ## Install Kubectl...
+                        kubectl_version_output=$(kubectl version --client 2>&1)
+                        if [ $? -eq 0 ]
+                        then
+                            echo "Kubectl is already installed"
+                        else
+                            echo "Installing Kubectl"
+                            # Update the apt package index and install packages needed to use the Kubernetes apt repository
+                            sudo apt-get update
+                            sudo apt-get install -y apt-transport-https ca-certificates
+                            
+                            # Download the public signing key for the Kubernetes package repositories
+                            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+                            
+                            # Add the appropriate Kubernetes apt repository. This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+                            echo \
+                            "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | \
+                            sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+                            
+                            # Finally install kubectl
+                            sudo apt-get update
+                            sudo apt-get install -y kubectl
+                            
+                            # Test to ensure the version installed is as mentioned
+                            kubectl version --client
+                            
+                            # Verify kubectl configuration by acesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
+                            kubectl cluster-info
+                        fi
                         
-                    ## Install Kubectl...
-                    kubectl_version_output=$(kubectl version --client 2>&1)
-                    if [ $? -eq 0 ]
-                    then
-                        echo "Kubectl is already installed"
-                    else
-                        echo "Installing Kubectl"
-                        # Update the apt package index and install packages needed to use the Kubernetes apt repository
-                        apt-get update && apt-get install -y apt-transport-https ca-certificates
-                        
-                        # Download the public signing key for the Kubernetes package repositories
-                        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-                        
-                        # Add the appropriate Kubernetes apt repository. This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
-                        echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
-                        
-                        # Finally install kubectl
-                        apt-get update && apt-get install -y kubectl
-                        
-                        # Test to ensure the version installed is as mentioned
-                        kubectl version --client
-                        
-                        # Verify kubectl configuration! For kubectl to find and access a Kubernetes cluster, it needs a kubeconfig file located at ~/.kube/config
-                        kubectl cluster-info
-                    fi
-                    
-                    ## Switch back to default user
-                    exit
-                '''
+                        ## Switch back to default user
+                        exit
+                    '''
+                }                
             }
         }
         
@@ -187,7 +193,7 @@ pipeline {
             }
         }
         
-        stage('Cleanup WSL Agent Node') {
+        stage('Cleanup Agent Node') {
             steps {
                 script {
                     sh '''
