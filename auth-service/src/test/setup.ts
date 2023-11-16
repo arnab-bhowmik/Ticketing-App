@@ -8,7 +8,7 @@ declare global {
 }
 
 let mongo: any;
-process.env.JWT_KEY = 'arn';
+process.env.JWT_KEY = 'fgfhjhukhbdxhgjhk';
 
 // Execute the function at the beginning of a Test Cycle
 beforeAll(async () => {
