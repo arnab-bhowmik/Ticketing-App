@@ -2,6 +2,7 @@ apiVersion: skaffold/v4beta7
 kind: Config
 manifests:
   rawYaml:
+  - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
   - ./infra/k8s/*
 build:
   local: 
