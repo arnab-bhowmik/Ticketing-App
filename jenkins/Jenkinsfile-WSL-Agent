@@ -124,15 +124,17 @@ pipeline {
         
         stage('Deploy Application on Kubernetes Cluster') {
             steps {
-                dir("${env.WORKSPACE}"){
-                    echo "Current Directory is:"
-                    sh "pwd"
-                    
-                    // Install the Ingress-Nginx Controler and setup the necesary Ingress service
-                    sh 'kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml'
-                    
-                    // Build the Application Docker Images & deploy on Kubernetes cluster via Skaffold
-                    sh 'skaffold build -q | skaffold deploy --build-artifacts -'
+                withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
+                    dir("${env.WORKSPACE}"){
+                        echo "Current Directory is:"
+                        sh "pwd"
+                        
+                        // Create a JWT Secret to be used for Authentication
+                        sh 'kubectl create secret generic jwt-secret --from-literal=JWT_KEY="${JWT_KEY}"'
+                        
+                        // Build the Application Docker Images & deploy on Kubernetes cluster for all namespaces via Skaffold
+                        sh 'skaffold build -q | skaffold deploy --build-artifacts -'
+                    }
                 }
             }
         }
@@ -197,13 +199,15 @@ pipeline {
             steps {
                 script {
                     sh '''
+                        # Delete the JWT secret
+                        kubectl delete secret jwt-secret
                         # Stop skaffold 
-                        echo "Stopping skaffold to clean up the deployed applications & services..."
+                        echo "Stopping skaffold to clean up the deployed applications & services for all kubernetes namespaces..."
                         skaffold delete
                         sleep 30
                     '''
                     
-                    // Access the environment variable from the prvious stage
+                    // Access the environment variable from the previous stage
                     DOCKER_IMAGE_NAMES = readFile('docker_image_names.txt').trim()
                     
                     // Delete locally built Docker Images iterating on the names
@@ -237,7 +241,6 @@ pipeline {
                         else
                             echo "No exited containers found"
                         fi
-                        
                         
                         # Remove any dangling images thereafter
                         echo "Removing any dangling images"
