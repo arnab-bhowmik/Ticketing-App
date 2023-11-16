@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Install required Software & Tools on Agent Node') {
+        stage('Install required tools on Agent Node') {
             steps {
                 withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
                     sh '''
@@ -122,7 +122,7 @@ pipeline {
             }
         }
         
-        stage('Deploy Full-Stack Application on Kubernetes Cluster') {
+        stage('Deploy Application on Kubernetes Cluster') {
             steps {
                 dir("${env.WORKSPACE}"){
                     echo "Current Directory is:"
