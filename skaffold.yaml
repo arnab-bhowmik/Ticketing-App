@@ -5,8 +5,12 @@ manifests:
   - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
   - ./infra/k8s/*
 build:
+  ## Use the following section when deploying to local Kubernetes Cluster. Comment out the googleCloudBuild: projectId: ticketing-app-prod part!
   local: 
     push: false
+  ## Use the following section when deploying to Google Cloud Kubernetes Cluster. Comment out the local: push: false part!
+  # googleCloudBuild:
+  #   projectId: ticketing-app-prod
   artifacts:
     - image: ticketing-app-auth-service
       context: auth-service
