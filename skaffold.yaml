@@ -1,8 +1,17 @@
 apiVersion: skaffold/v4beta7
 kind: Config
+metadata:
+    name: ingress-nginx
 manifests:
   rawYaml:
-  - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+  - ./infra/k8s/ingress/ingress-nginx-controller.yaml
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+    name: ticketing-app
+manifests:
+  rawYaml:
   - ./infra/k8s/*
 build:
   ## Use the following section when deploying to local Kubernetes Cluster. Comment out the googleCloudBuild: projectId: ticketing-app-prod part!

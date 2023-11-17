@@ -131,9 +131,12 @@ pipeline {
                         
                         // Create a JWT Secret to be used for Authentication
                         sh 'kubectl create secret generic jwt-secret --from-literal=JWT_KEY="${JWT_KEY}"'
+
+                        // Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
+                        sh 'skaffold deploy --module ingress-nginx'
                         
-                        // Build the Application Docker Images & deploy on Kubernetes cluster for all namespaces via Skaffold
-                        sh 'skaffold build -q | skaffold deploy --build-artifacts -'
+                        // Build the Application Docker Images & deploy on Kubernetes cluster via Skaffold
+                        sh 'skaffold build -q --module ticketing-app | skaffold deploy --build-artifacts -'
                     }
                 }
             }
