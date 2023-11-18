@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        MODULE_NAMESPACE_1 = 'ingress-nginx'
+        MODULE_NAMESPACE_2 = 'ticketing-app'
+    }
+
     stages {
         stage('Install required tools on Agent Node') {
             steps {
@@ -125,18 +130,42 @@ pipeline {
         stage('Deploy Application on Kubernetes Cluster') {
             steps {
                 withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                    dir("${env.WORKSPACE}"){
-                        echo "Current Directory is:"
-                        sh "pwd"
-                        
-                        // Create a JWT Secret to be used for Authentication
-                        sh 'kubectl create secret generic jwt-secret --from-literal=JWT_KEY="${JWT_KEY}"'
-
-                        // Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
-                        sh 'skaffold deploy --module ingress-nginx'
-                        
-                        // Build the Application Docker Images & deploy on Kubernetes cluster via Skaffold
-                        sh 'skaffold build -q --module ticketing-app | skaffold deploy --build-artifacts -'
+                    withEnv(["MODULE_NS_1=${env.MODULE_NAMESPACE_1}", "MODULE_NS_2=${env.MODULE_NAMESPACE_2}"]) {
+                        dir("${env.WORKSPACE}"){
+                            echo "Current Directory is:"
+                            sh "pwd"
+                            
+                            sh '''
+                                MODULE_NAMESPACE_1="${MODULE_NS_1}"
+                                MODULE_NAMESPACE_2="${MODULE_NS_2}"
+                                
+                                # Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
+                                skaffold deploy --module ${MODULE_NAMESPACE_1}
+                                
+                                echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
+                                kubectl get deployment  -n ${MODULE_NAMESPACE_1}
+                                kubectl get pods        -n ${MODULE_NAMESPACE_1}
+                                kubectl get services    -n ${MODULE_NAMESPACE_1}
+                                
+                                
+                                # Create the namespace
+                                kubectl create namespace ${MODULE_NAMESPACE_2}
+                                
+                                # Create a JWT Secret to be used for Authentication
+                                kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
+                                
+                                # Build the Application Docker Images via Skaffold
+                                skaffold build --module ${MODULE_NAMESPACE_2} --file-output=build_artifacts.json
+                                
+                                # Deploy the built artifacts on Kubernetes cluster via Skaffold
+                                skaffold deploy --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
+                                
+                                echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
+                                kubectl get deployment  -n ${MODULE_NAMESPACE_2}
+                                kubectl get pods        -n ${MODULE_NAMESPACE_2}
+                                kubectl get services    -n ${MODULE_NAMESPACE_2}
+                            '''
+                        }
                     }
                 }
             }
@@ -201,54 +230,61 @@ pipeline {
         stage('Cleanup Agent Node') {
             steps {
                 script {
-                    sh '''
-                        # Delete the JWT secret
-                        kubectl delete secret jwt-secret
-                        # Stop skaffold 
-                        echo "Stopping skaffold to clean up the deployed applications & services for all kubernetes namespaces..."
-                        skaffold delete
-                        sleep 30
-                    '''
-                    
-                    // Access the environment variable from the previous stage
-                    DOCKER_IMAGE_NAMES = readFile('docker_image_names.txt').trim()
-                    
-                    // Delete locally built Docker Images iterating on the names
-                    DOCKER_IMAGE_NAMES.tokenize(",").each { name ->
-                        sh """
-                            # Delete skaffold generated Docker images on the Agent Node
-                            echo "Deleting skaffold generated Docker image $name on the Agent Node"
-                            docker images --format "{{.Repository}}:{{.Tag}}" | grep "^$name:" | xargs -I {} docker rmi {}
-                        """
+                    withEnv(["MODULE_NS_1=${env.MODULE_NAMESPACE_1}", "MODULE_NS_2=${env.MODULE_NAMESPACE_2}"]) {
+                        sh '''
+                            MODULE_NAMESPACE_1="${MODULE_NS_1}"
+                            MODULE_NAMESPACE_2="${MODULE_NS_2}"
+                        
+                            # Delete the JWT secret
+                            kubectl delete secret jwt-secret -n ${MODULE_NAMESPACE_2}
+                            
+                            # Stop skaffold 
+                            echo "Stopping skaffold to clean up the deployed applications & services for all kubernetes namespaces..."
+                            skaffold delete --module ${MODULE_NAMESPACE_1}
+                            skaffold delete --module ${MODULE_NAMESPACE_2}
+                            sleep 30
+                        '''
+                        
+                        // Access the environment variable from the previous stage
+                        DOCKER_IMAGE_NAMES = readFile('docker_image_names.txt').trim()
+                        
+                        // Delete locally built Docker Images iterating on the names
+                        DOCKER_IMAGE_NAMES.tokenize(",").each { name ->
+                            sh """
+                                # Delete skaffold generated Docker images on the Agent Node
+                                echo "Deleting skaffold generated Docker image $name on the Agent Node"
+                                docker images --format "{{.Repository}}:{{.Tag}}" | grep "^$name:" | xargs -I {} docker rmi {}
+                            """
+                        }
+                        
+                        sh '''
+                            # Get the list of container IDs for created & exited containers
+                            created_container_ids=$(docker ps -aq -f status=created)
+                            exited_container_ids=$(docker ps -aq -f status=exited)
+                            
+                            # Remove created containers if the list is not empty 
+                            if [ -n "$created_container_ids" ]; then
+                                # Remove created containers
+                                docker rm -f $created_container_ids
+                                echo "Created containers removed"
+                            else
+                                echo "No created containers found"
+                            fi
+                            
+                            # Remove exited containers if the list is not empty
+                            if [ -n "$exited_container_ids" ]; then
+                                # Remove exited containers
+                                docker rm -f $exited_container_ids
+                                echo "Exited containers removed"
+                            else
+                                echo "No exited containers found"
+                            fi
+                            
+                            # Remove any dangling images thereafter
+                            echo "Removing any dangling images"
+                            docker image prune -f
+                        '''
                     }
-                    
-                    sh '''
-                        # Get the list of container IDs for created & exited containers
-                        created_container_ids=$(docker ps -aq -f status=created)
-                        exited_container_ids=$(docker ps -aq -f status=exited)
-                        
-                        # Remove created containers if the list is not empty 
-                        if [ -n "$created_container_ids" ]; then
-                            # Remove created containers
-                            docker rm -f $created_container_ids
-                            echo "Created containers removed"
-                        else
-                            echo "No created containers found"
-                        fi
-                        
-                        # Remove exited containers if the list is not empty
-                        if [ -n "$exited_container_ids" ]; then
-                            # Remove exited containers
-                            docker rm -f $exited_container_ids
-                            echo "Exited containers removed"
-                        else
-                            echo "No exited containers found"
-                        fi
-                        
-                        # Remove any dangling images thereafter
-                        echo "Removing any dangling images"
-                        docker image prune -f
-                    '''
                 }
             }
         }
