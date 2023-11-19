@@ -16,6 +16,7 @@ spec:
       containers:
         - name: auth
           image: ticketing-app-auth-service:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: JWT_KEY
               valueFrom:

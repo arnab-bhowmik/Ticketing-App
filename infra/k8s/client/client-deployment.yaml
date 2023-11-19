@@ -16,6 +16,7 @@ spec:
       containers:
         - name: client
           image: ticketing-app-frontend-client:latest
+          imagePullPolicy: IfNotPresent
 ---
 apiVersion: v1
 kind: Service
