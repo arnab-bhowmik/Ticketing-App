@@ -15,11 +15,7 @@ spec:
     spec:
       containers:
         - name: client
-          ## Use the following image name when deploying on Google Cloud Kubernetes Cluster!
-          # image: us.gcr.io/ticketing-app-prod/ticketing-app-frontend-client:latest
-          ## Use the following image name when deploying on local Kubernetes Cluster!
           image: ticketing-app-frontend-client:latest
-          imagePullPolicy: Never
 ---
 apiVersion: v1
 kind: Service
