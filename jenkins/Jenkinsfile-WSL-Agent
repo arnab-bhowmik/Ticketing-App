@@ -4,6 +4,13 @@ pipeline {
     environment {
         MODULE_NAMESPACE_1 = 'ingress-nginx'
         MODULE_NAMESPACE_2 = 'ticketing-app'
+        
+        K8S_CLUSTER_PROJ = 'ticketing-app-prod' 
+        K8S_CLUSTER_NAME = 'ticketing-app-k8-cluster' 
+        K8S_CLUSTER_ZONE = 'us-east1-c'
+
+        KUBECTL_DESIRED_CONTEXT = 'docker-desktop'
+        DOCKER_IMAGE_NAMES = ' '
     }
 
     stages {
@@ -92,7 +99,52 @@ pipeline {
                             # Verify kubectl configuration by acesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
                             kubectl cluster-info
                         fi
-                        
+
+                        ## Install Google Cloud SDK...
+                        gcloud_version_output=$(gcloud version)
+                        if [ $? -eq 0 ]
+                        then
+                            echo "Google Cloud SDK is already installed"
+                        else
+                            echo "Installing Google Cloud SDK"
+                            # Update the apt package & install necessary packages 
+                            sudo apt-get update
+                            sudo apt-get install apt-transport-https ca-certificates gnupg curl sudo
+
+                            ########
+                            ## Add the appropriate Google Cloud apt repository. Only one of the below options shall be executed.
+                            ########
+
+                            # If your distribution supports the signed-by option, run the following command
+                            echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+                            # If your distribution doesn't support the signed-by option, run the following command
+                            echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+                            ########
+                            ## Import the Google Cloud public key. Only one of the below options shall be executed.
+                            ########
+                            # If your distribution's apt-key command supports the --keyring argument, run the following command
+                            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+
+                            # If your distribution's apt-key command doesn't support the --keyring argument, run the following command
+                            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+                            # If your distribution (Debian 11+ or Ubuntu 21.10+) doesn't support apt-key, run the following command
+                            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc
+
+                            # Finally install Google Cloud SDK
+                            sudo apt-get update
+                            sudo apt-get install -y google-cloud-cli
+
+                            # Test to ensure the version installed is as mentioned
+                            gcloud version 
+
+                            # Following commands to be executed outside of this Jenkinsfile for initializing & configuring Google Cloud SDK
+                            # gcloud auth login
+                            # gcloud init
+                        fi
+
                         ## Switch back to default user
                         exit
                     '''
@@ -127,20 +179,23 @@ pipeline {
             }
         }
         
-        stage('Deploy Application on Kubernetes Cluster') {
+        stage('Deploy Application on Local Kubernetes Cluster') {
             steps {
                 withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                    withEnv(["MODULE_NS_1=${env.MODULE_NAMESPACE_1}", "MODULE_NS_2=${env.MODULE_NAMESPACE_2}"]) {
+                    withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DESIRED_CONTEXT=${env.KUBECTL_DESIRED_CONTEXT}"]) {
                         dir("${env.WORKSPACE}"){
                             echo "Current Directory is:"
                             sh "pwd"
                             
                             sh '''
-                                MODULE_NAMESPACE_1="${MODULE_NS_1}"
-                                MODULE_NAMESPACE_2="${MODULE_NS_2}"
+                                # Set the Kubernetes context explicitly
+                                kubectl config use-context ${KUBECTL_DESIRED_CONTEXT}
+
+                                # Verify the kubectl context
+                                kubectl config current-context
                                 
                                 # Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
-                                skaffold deploy --module ${MODULE_NAMESPACE_1}
+                                skaffold deploy --profile dev --module ${MODULE_NAMESPACE_1}
                                 
                                 echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
                                 kubectl get deployment  -n ${MODULE_NAMESPACE_1}
@@ -155,10 +210,10 @@ pipeline {
                                 kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
                                 
                                 # Build the Application Docker Images via Skaffold
-                                skaffold build --module ${MODULE_NAMESPACE_2} --file-output=build_artifacts.json
+                                skaffold build --profile dev --module ${MODULE_NAMESPACE_2} --file-output=build_artifacts.json
                                 
                                 # Deploy the built artifacts on Kubernetes cluster via Skaffold
-                                skaffold deploy --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
+                                skaffold deploy --profile dev --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
                                 
                                 echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
                                 kubectl get deployment  -n ${MODULE_NAMESPACE_2}
@@ -182,19 +237,14 @@ pipeline {
         }
         
         stage('Push Images to Docker Hub') {
-            environment {
-                DOCKER_IMAGE_NAMES = ' ' 
-            }
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        withEnv(["DOCKER_IMAGE_NAMES=${DOCKER_IMAGE_NAMES}"]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
                             sh '''
                                 docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-                                # Build and store the Docker Image details in JSON format
-                                skaffold build -q --dry-run > skaffold_build_result.json
-                                
-                                for item in $(cat skaffold_build_result.json | jq -c '.builds[]'); do
+
+                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
                                     # Extract the image name and corresponding tag
                                     echo "Extracting the image name and corresponding tag..."
                                     imageName=$(echo "$item" | jq -r '.imageName')
@@ -226,22 +276,78 @@ pipeline {
                 }
             }
         }
+
+        stage('Push Images to Google Cloud Container Registry') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
+                            sh '''
+                                # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
+                                KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+                                kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
+
+                                # Verify the kubectl context
+                                kubectl config current-context
+                                
+                                # Authenticate with Google Cloud using a service account key
+                                gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
+
+                                # Set the GKE cluster context
+                                gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${K8S_CLUSTER_PROJ}
+
+                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+                                    # Extract the image name and corresponding tag
+                                    echo "Extracting the image name and corresponding tag..."
+                                    imageName=$(echo "$item" | jq -r '.imageName')
+                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                    
+                                    # Tag the extracted Docker image before pushing to Google Cloud Container Registry in the format gcr.io/project/repo/image:latest
+                                    echo "Tagging the extracted Docker image before pushing to Google Cloud Container Registry"
+                                    docker tag $imageName:$tag gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest
+                                
+                                    # Push the image to Google Cloud Container Registry using service account. 
+                                    # Ensure the service account has correct access - artifactregistry.writer & artifactregistry.reader on the Container/Artifact Registry
+                                    echo "Pushing the image to Google Cloud Container Registry"
+                                    docker push gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest
+                                
+                                    # Print the results & delete the :latest tagged image
+                                    echo "Pushed image $imageName with tag $tag to Google Cloud Container Registry with tag as latest"
+                                    docker rmi gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest
+
+                                    # Save the image name as environment variable to access later for cleanup
+                                    updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
+                                    DOCKER_IMAGE_NAMES=$(echo $updatedArray | sed 's/^[,[:space:]]*//;s/[,[:space:]]*$//')
+                                    echo "Updated image name list: ${DOCKER_IMAGE_NAMES}" 
+                                done
+
+                                # Store the environment variable in a file to pass it to the next stage
+                                echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
+                            '''
+                        }
+                    }
+                }
+            }
+        }
         
         stage('Cleanup Agent Node') {
             steps {
                 script {
-                    withEnv(["MODULE_NS_1=${env.MODULE_NAMESPACE_1}", "MODULE_NS_2=${env.MODULE_NAMESPACE_2}"]) {
-                        sh '''
-                            MODULE_NAMESPACE_1="${MODULE_NS_1}"
-                            MODULE_NAMESPACE_2="${MODULE_NS_2}"
+                    withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DESIRED_CONTEXT=${env.KUBECTL_DESIRED_CONTEXT}"]) {
+                        sh '''                          
+                            # Set the Kubernetes context explicitly
+                            kubectl config use-context ${KUBECTL_DESIRED_CONTEXT}
+
+                            # Verify the kubectl context
+                            kubectl config current-context
                         
                             # Delete the JWT secret
                             kubectl delete secret jwt-secret -n ${MODULE_NAMESPACE_2}
                             
                             # Stop skaffold 
                             echo "Stopping skaffold to clean up the deployed applications & services for all kubernetes namespaces..."
-                            skaffold delete --module ${MODULE_NAMESPACE_1}
-                            skaffold delete --module ${MODULE_NAMESPACE_2}
+                            skaffold delete --profile dev --module ${MODULE_NAMESPACE_1}
+                            skaffold delete --profile dev --module ${MODULE_NAMESPACE_2}
                             sleep 30
                         '''
                         
