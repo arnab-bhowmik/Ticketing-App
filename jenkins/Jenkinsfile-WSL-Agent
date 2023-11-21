@@ -11,6 +11,9 @@ pipeline {
 
         KUBECTL_DESIRED_CONTEXT = 'docker-desktop'
         DOCKER_IMAGE_NAMES = ' '
+
+        ARTIFACT_REGISTRY_NAME = 'ticketing-app-artifact-registry'
+        ARTIFACT_REGISTRY_LOCATION = 'us'
     }
 
     stages {
@@ -181,45 +184,47 @@ pipeline {
         
         stage('Deploy Application on Local Kubernetes Cluster') {
             steps {
-                withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                    withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DESIRED_CONTEXT=${env.KUBECTL_DESIRED_CONTEXT}"]) {
-                        dir("${env.WORKSPACE}"){
-                            echo "Current Directory is:"
-                            sh "pwd"
-                            
-                            sh '''
-                                # Set the Kubernetes context explicitly
-                                kubectl config use-context ${KUBECTL_DESIRED_CONTEXT}
+                script {
+                    withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
+                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DESIRED_CONTEXT=${env.KUBECTL_DESIRED_CONTEXT}"]) {
+                            dir("${env.WORKSPACE}"){
+                                echo "Current Directory is:"
+                                sh "pwd"
+                                
+                                sh '''
+                                    # Set the Kubernetes context explicitly
+                                    kubectl config use-context ${KUBECTL_DESIRED_CONTEXT}
 
-                                # Verify the kubectl context
-                                kubectl config current-context
-                                
-                                # Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
-                                skaffold deploy --profile dev --module ${MODULE_NAMESPACE_1}
-                                
-                                echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
-                                kubectl get deployment  -n ${MODULE_NAMESPACE_1}
-                                kubectl get pods        -n ${MODULE_NAMESPACE_1}
-                                kubectl get services    -n ${MODULE_NAMESPACE_1}
-                                
-                                
-                                # Create the namespace
-                                kubectl create namespace ${MODULE_NAMESPACE_2}
-                                
-                                # Create a JWT Secret to be used for Authentication
-                                kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
-                                
-                                # Build the Application Docker Images via Skaffold
-                                skaffold build --profile dev --module ${MODULE_NAMESPACE_2} --file-output=build_artifacts.json
-                                
-                                # Deploy the built artifacts on Kubernetes cluster via Skaffold
-                                skaffold deploy --profile dev --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
-                                
-                                echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
-                                kubectl get deployment  -n ${MODULE_NAMESPACE_2}
-                                kubectl get pods        -n ${MODULE_NAMESPACE_2}
-                                kubectl get services    -n ${MODULE_NAMESPACE_2}
-                            '''
+                                    # Verify the kubectl context
+                                    kubectl config current-context
+                                    
+                                    # Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
+                                    skaffold deploy --profile dev --module ${MODULE_NAMESPACE_1}
+                                    
+                                    echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
+                                    kubectl get deployment  -n ${MODULE_NAMESPACE_1}
+                                    kubectl get pods        -n ${MODULE_NAMESPACE_1}
+                                    kubectl get services    -n ${MODULE_NAMESPACE_1}
+                                    
+                                    
+                                    # Create the namespace
+                                    kubectl create namespace ${MODULE_NAMESPACE_2}
+                                    
+                                    # Create a JWT Secret to be used for Authentication
+                                    kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
+                                    
+                                    # Build the Application Docker Images via Skaffold
+                                    skaffold build --profile dev --module ${MODULE_NAMESPACE_2} --file-output=build_artifacts.json
+                                    
+                                    # Deploy the built artifacts on Kubernetes cluster via Skaffold
+                                    skaffold deploy --profile dev --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
+                                    
+                                    echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
+                                    kubectl get deployment  -n ${MODULE_NAMESPACE_2}
+                                    kubectl get pods        -n ${MODULE_NAMESPACE_2}
+                                    kubectl get services    -n ${MODULE_NAMESPACE_2}
+                                '''
+                            }
                         }
                     }
                 }
@@ -277,11 +282,11 @@ pipeline {
             }
         }
 
-        stage('Push Images to Google Cloud Container Registry') {
+        stage('Push Images to Google Cloud Artifact Registry') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
-                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
                             sh '''
                                 # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
                                 KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
@@ -301,19 +306,36 @@ pipeline {
                                     echo "Extracting the image name and corresponding tag..."
                                     imageName=$(echo "$item" | jq -r '.imageName')
                                     tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+
+                                    # Create the corresponding Google Cloud Image name
+                                    gcrImage="gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest"
+                                    # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${K8S_CLUSTER_PROJ}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
                                     
-                                    # Tag the extracted Docker image before pushing to Google Cloud Container Registry in the format gcr.io/project/repo/image:latest
-                                    echo "Tagging the extracted Docker image before pushing to Google Cloud Container Registry"
-                                    docker tag $imageName:$tag gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest
+                                    # Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
+                                    echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
+                                    docker tag $imageName:$tag $gcrImage
                                 
-                                    # Push the image to Google Cloud Container Registry using service account. 
+                                    # Push the image to Google Cloud Artifact Registry using service account 
                                     # Ensure the service account has correct access - artifactregistry.writer & artifactregistry.reader on the Container/Artifact Registry
-                                    echo "Pushing the image to Google Cloud Container Registry"
-                                    docker push gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest
+                                    echo "Pushing the image to Google Cloud Artifact Registry"
+                                    docker push $gcrImage
                                 
                                     # Print the results & delete the :latest tagged image
-                                    echo "Pushed image $imageName with tag $tag to Google Cloud Container Registry with tag as latest"
-                                    docker rmi gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest
+                                    echo "Pushed image $imageName with tag $tag to Google Cloud Artifact Registry with tag as latest"
+                                    docker rmi $gcrImage
+
+                                    # Replace the image name in the corresponding Kubernetes deployment manifest file
+                                    if echo "$imageName" | grep -q "auth" 
+                                    then
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/auth-service/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/auth-service/*.yaml
+                                        # cat infra/k8s/auth-service/*.yaml
+                                    elif echo "$imageName" | grep -q "client" 
+                                    then
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/client/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/client/*.yaml
+                                        # cat infra/k8s/client/*.yaml
+                                    fi
 
                                     # Save the image name as environment variable to access later for cleanup
                                     updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
@@ -323,6 +345,56 @@ pipeline {
 
                                 # Store the environment variable in a file to pass it to the next stage
                                 echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy Application on Google Cloud Kubernetes Cluster') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
+                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
+                            sh '''
+                                # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
+                                KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+                                kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
+
+                                # Verify the kubectl context
+                                kubectl config current-context
+                                
+                                # Authenticate with Google Cloud using a service account key
+                                gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
+
+                                # Set the GKE cluster context
+                                gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${K8S_CLUSTER_PROJ}
+
+                                # Deploy the ingress-nginx controller on Google Cloud Kubernetes Cluster via Skaffold
+                                skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
+
+                                echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
+                                kubectl get deployment  -n ${MODULE_NAMESPACE_1}
+                                kubectl get pods        -n ${MODULE_NAMESPACE_1}
+                                kubectl get services    -n ${MODULE_NAMESPACE_1}
+                                
+                                # Deploy the updated kubernetes deployment manifest files on Google Cloud Kubernetes Cluster via kubectl
+                                kubectl apply -f ./infra/k8s/namespace/*
+
+                                # Create a JWT Secret to be used for Authentication
+                                kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
+
+                                kubectl apply -f ./infra/k8s/client/*
+                                kubectl apply -f ./infra/k8s/database/*
+                                kubectl apply -f ./infra/k8s/auth-service/*
+                                kubectl apply -f ./infra/k8s/ingress/*
+
+                                echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
+                                kubectl get deployment  -n ${MODULE_NAMESPACE_2}
+                                kubectl get pods        -n ${MODULE_NAMESPACE_2}
+                                kubectl get services    -n ${MODULE_NAMESPACE_2}
+
                             '''
                         }
                     }
