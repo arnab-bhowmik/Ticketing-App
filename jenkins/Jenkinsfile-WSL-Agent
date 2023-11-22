@@ -201,13 +201,13 @@ pipeline {
                                     # Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
                                     skaffold deploy --profile dev --module ${MODULE_NAMESPACE_1}
                                     
+                                    sleep 20
                                     echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
                                     kubectl get deployment  -n ${MODULE_NAMESPACE_1}
                                     kubectl get pods        -n ${MODULE_NAMESPACE_1}
                                     kubectl get services    -n ${MODULE_NAMESPACE_1}
                                     
-                                    
-                                    # Create the namespace
+                                    # Create the application namespace
                                     kubectl create namespace ${MODULE_NAMESPACE_2}
                                     
                                     # Create a JWT Secret to be used for Authentication
@@ -219,6 +219,7 @@ pipeline {
                                     # Deploy the built artifacts on Kubernetes cluster via Skaffold
                                     skaffold deploy --profile dev --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
                                     
+                                    sleep 20
                                     echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
                                     kubectl get deployment  -n ${MODULE_NAMESPACE_2}
                                     kubectl get pods        -n ${MODULE_NAMESPACE_2}
@@ -329,12 +330,10 @@ pipeline {
                                     then
                                         sed -i "s|image:.*|image: $gcrImage|" infra/k8s/auth-service/*.yaml
                                         sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/auth-service/*.yaml
-                                        # cat infra/k8s/auth-service/*.yaml
                                     elif echo "$imageName" | grep -q "client" 
                                     then
                                         sed -i "s|image:.*|image: $gcrImage|" infra/k8s/client/*.yaml
                                         sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/client/*.yaml
-                                        # cat infra/k8s/client/*.yaml
                                     fi
 
                                     # Save the image name as environment variable to access later for cleanup
@@ -374,22 +373,25 @@ pipeline {
                                 # Deploy the ingress-nginx controller on Google Cloud Kubernetes Cluster via Skaffold
                                 skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
 
+                                sleep 20
                                 echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
                                 kubectl get deployment  -n ${MODULE_NAMESPACE_1}
                                 kubectl get pods        -n ${MODULE_NAMESPACE_1}
                                 kubectl get services    -n ${MODULE_NAMESPACE_1}
                                 
-                                # Deploy the updated kubernetes deployment manifest files on Google Cloud Kubernetes Cluster via kubectl
+                                # Create the application namespace
                                 kubectl apply -f ./infra/k8s/namespace/*
 
                                 # Create a JWT Secret to be used for Authentication
                                 kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
 
+                                # Deploy the updated kubernetes deployment manifest files on Google Cloud Kubernetes Cluster via kubectl
                                 kubectl apply -f ./infra/k8s/client/*
                                 kubectl apply -f ./infra/k8s/database/*
                                 kubectl apply -f ./infra/k8s/auth-service/*
                                 kubectl apply -f ./infra/k8s/ingress/*
 
+                                sleep 20
                                 echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
                                 kubectl get deployment  -n ${MODULE_NAMESPACE_2}
                                 kubectl get pods        -n ${MODULE_NAMESPACE_2}
