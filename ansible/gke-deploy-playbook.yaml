@@ -23,7 +23,11 @@
         GCLOUD_KEY: "{{ GCLOUD_KEY }}"
 
     - name: Configure kubectl
-      command: gcloud container clusters get-credentials your-cluster-name --zone your-cluster-zone --project your-gcp-project
+      command: gcloud container clusters get-credentials {{ K8S_CLUSTER_NAME } --zone {{ K8S_CLUSTER_ZONE }} --project {{ K8S_CLUSTER_PROJ }}
+      environment:
+        K8S_CLUSTER_PROJ: "{{ K8S_CLUSTER_PROJ }}"
+        K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
+        K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
 
     - name: Deploy Ingress Controller via Skaffold
       command: skaffold deploy --profile prod --module {{ MODULE_NAMESPACE_1 }}
