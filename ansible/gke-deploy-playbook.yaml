@@ -5,15 +5,17 @@
 
   tasks:
     - name: Set the Kubernetes context 
-      command: KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+      shell: |
+        KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+        kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
       environment:
         K8S_CLUSTER_PROJ: "{{ K8S_CLUSTER_PROJ }}"
         K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
         K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
     
-    - name: Load Kubernetes Configuration
-      k8s_config:
-        context: KUBECTL_GCLOUD_CONTEXT
+    # - name: Load Kubernetes Configuration
+      # k8s_config:
+      #   context: KUBECTL_GCLOUD_CONTEXT
 
     - name: Authenticate with Google Cloud 
       command: gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
@@ -29,9 +31,9 @@
         MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
       register: skaffold_result
 
-    # - name: Debug Skaffold Output
-    #   debug:
-    #     var: skaffold_result
+    - name: Debug Skaffold Output
+      debug:
+        var: skaffold_result
 
     # - name: Wait for Skaffold Deployment Completion
     #   wait_for:
