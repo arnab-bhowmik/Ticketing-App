@@ -54,4 +54,9 @@
         JWT_KEY: "{{ JWT_KEY }}"
 
     - name: Deploy Updated Kubernetes Manifests
-      command: kubectl apply -f ./infra/k8s/client/* ./infra/k8s/database/* ./infra/k8s/auth-service/* ./infra/k8s/ingress/*
+      shell: |
+        kubectl apply -f ./infra/k8s/client/*
+        kubectl apply -f ./infra/k8s/database/*
+        kubectl apply -f ./infra/k8s/auth-service/*
+        kubectl apply -f ./infra/k8s/ingress/*
+      # command: kubectl apply -f ./infra/k8s/client/* ./infra/k8s/database/* ./infra/k8s/auth-service/* ./infra/k8s/ingress/*
