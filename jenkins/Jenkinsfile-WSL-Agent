@@ -308,17 +308,17 @@ pipeline {
                         withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
                             sh '''
                                 # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
-                                KUBECTL_GCLOUD_CONTEXT="gke_${GCP_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
-                                kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
+                                # KUBECTL_GCLOUD_CONTEXT="gke_${GCP_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+                                # kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
 
                                 # Verify the kubectl context
-                                kubectl config current-context
+                                # kubectl config current-context
                                 
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
                                 # Set the GKE cluster context
-                                gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
+                                # gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
 
                                 for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
                                     # Extract the image name and corresponding tag
