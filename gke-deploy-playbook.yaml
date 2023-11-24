@@ -25,11 +25,6 @@
       debug:
         var: skaffold_result
 
-    # - name: Wait for Skaffold Deployment Completion
-    #   wait_for:
-    #     timeout: 120
-    #     path: "{{ ansible_env.HOME }}/.kube/config"
-
     - name: Create Application Namespace
       command: kubectl apply -f ./infra/k8s/namespace/*
 

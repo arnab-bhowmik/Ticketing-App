@@ -8,7 +8,7 @@ pipeline {
         GCP_PROJ            = 'ticketing-app-prod' 
         GCP_REGION          = 'us-east1'
 
-        K8S_CLUSTER_NAME    = 'ticketing-app-k8-cluster-uat' 
+        K8S_CLUSTER_NAME    = 'ticketing-app-k8-cluster' 
         K8S_CLUSTER_ZONE    = 'us-east1-c'
         K8S_NODE_TYPE       = 'n1-standard-1'
         K8S_NODE_COUNT      = 1
@@ -260,46 +260,46 @@ pipeline {
             }
         }
         
-        stage('Push Images to Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
-                            sh '''
-                                docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+        // stage('Push Images to Docker Hub') {
+        //     steps {
+        //         script {
+        //             withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+        //                 withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
+        //                     sh '''
+        //                         docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
 
-                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
-                                    # Extract the image name and corresponding tag
-                                    echo "Extracting the image name and corresponding tag..."
-                                    imageName=$(echo "$item" | jq -r '.imageName')
-                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+        //                         for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+        //                             # Extract the image name and corresponding tag
+        //                             echo "Extracting the image name and corresponding tag..."
+        //                             imageName=$(echo "$item" | jq -r '.imageName')
+        //                             tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
                                     
-                                    # Tag the extracted Docker image before pushing to Docker Hub
-                                    echo "Tagging the extracted Docker image before pushing to Docker Hub"
-                                    docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
+        //                             # Tag the extracted Docker image before pushing to Docker Hub
+        //                             echo "Tagging the extracted Docker image before pushing to Docker Hub"
+        //                             docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
                                 
-                                    # Push the image to Docker Hub
-                                    echo "Pushing the image to Docker Hub"
-                                    docker push $DOCKER_HUB_USERNAME/$imageName:latest
+        //                             # Push the image to Docker Hub
+        //                             echo "Pushing the image to Docker Hub"
+        //                             docker push $DOCKER_HUB_USERNAME/$imageName:latest
                                 
-                                    # Print the results & delete the :latest tagged image
-                                    echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
-                                    docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
+        //                             # Print the results & delete the :latest tagged image
+        //                             echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
+        //                             docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
                                     
-                                    # Save the image name as environment variable to access later for cleanup
-                                    updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
-                                    DOCKER_IMAGE_NAMES=$(echo $updatedArray | sed 's/^[,[:space:]]*//;s/[,[:space:]]*$//')
-                                    echo "Updated image name list: ${DOCKER_IMAGE_NAMES}"  
-                                done
+        //                             # Save the image name as environment variable to access later for cleanup
+        //                             updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
+        //                             DOCKER_IMAGE_NAMES=$(echo $updatedArray | sed 's/^[,[:space:]]*//;s/[,[:space:]]*$//')
+        //                             echo "Updated image name list: ${DOCKER_IMAGE_NAMES}"  
+        //                         done
                                 
-                                # Store the environment variable in a file to pass it to the next stage
-                                echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+        //                         # Store the environment variable in a file to pass it to the next stage
+        //                         echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Push Images to Google Cloud Artifact Registry') {
             steps {
@@ -476,6 +476,7 @@ pipeline {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
                         withEnv(["GCP_PROJ=${env.GCP_PROJ}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
                             sh '''
+                                # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
                                 ansible-playbook -i ./gke-inventory.ini ./gke-cluster-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJ=${GCP_PROJ}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
                             '''
                         }
@@ -490,6 +491,7 @@ pipeline {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'), string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
                         withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
                             sh '''
+                                # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
                                 ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJ=${GCP_PROJ}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
                             '''
                         }
