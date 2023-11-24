@@ -3,6 +3,11 @@
   hosts: jenkins_agent_node
   gather_facts: false
   tasks:
+    - name: Authenticate with Google Cloud 
+      command: gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
+      environment:
+        GCLOUD_KEY: "{{ GCLOUD_KEY }}"
+
     - name: Set Google Cloud project
       command: gcloud config set project ${GCP_PROJ}
       environment:
