@@ -1,0 +1,23 @@
+## Open Issues ##
+
+1) GCloud: There is no place in Google Cloud Artifact Registry to store the Kubernetes manifest YAML files. Currently the files get applied
+    directly with kubectl and the Jenkins jobs don't have reference to the files at the time of execution.
+
+2) GCloud: There is no command to push images directly to Google Cloud Artifact Registry of type Docker unless it is of gcr.io domain.
+            "gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest" --> works fine with docker push
+            "${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${K8S_CLUSTER_PROJ}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest" --> Doesn't work
+
+3) Ansible: Unable to execute skaffold commands and reference YAML file paths from the ansible playbook when not placed at the root dir.
+
+4) Ansible: Could not use k8s_config to set the Kubectl Context in the playbook file.
+            # - name: Load Kubernetes Configuration
+            # k8s_config:
+            #   context: KUBECTL_GCLOUD_CONTEXT
+
+## Closed Issues ##
+
+1) Ansible: Unable to connect to the remote Jenkins Agent Node via ssh using Ansible inventory file. Using localhost instead.
+            Jenkins master is able to reach out to Agent node though.
+   Soln:-   As the Jenkins job is running within the Agent Node itself and the tasks mentioned in the ansible playbook ideally
+            should get executed on the Jenkins Agent node, localhost should suffice. Agent Node should have ansible installed already.
+
