@@ -2,14 +2,18 @@ pipeline {
     agent any
 
     environment {
-        MODULE_NAMESPACE_1 = 'ingress-nginx'
-        MODULE_NAMESPACE_2 = 'ticketing-app'
+        MODULE_NAMESPACE_1  = 'ingress-nginx'
+        MODULE_NAMESPACE_2  = 'ticketing-app'
         
-        K8S_CLUSTER_PROJ = 'ticketing-app-prod' 
-        K8S_CLUSTER_NAME = 'ticketing-app-k8-cluster' 
-        K8S_CLUSTER_ZONE = 'us-east1-c'
+        GCP_PROJ            = 'ticketing-app-prod' 
+        GCP_REGION          = 'us-east1'
 
-        KUBECTL_DESIRED_CONTEXT = 'docker-desktop'
+        K8S_CLUSTER_NAME    = 'ticketing-app-k8-cluster-uat' 
+        K8S_CLUSTER_ZONE    = 'us-east1-c'
+        K8S_NODE_TYPE       = 'n1-standard-1'
+        K8S_NODE_COUNT      = 1
+
+        KUBECTL_DEV_CONTEXT = 'docker-desktop'
         DOCKER_IMAGE_NAMES = ' '
 
         ARTIFACT_REGISTRY_NAME = 'ticketing-app-artifact-registry'
@@ -200,14 +204,14 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DESIRED_CONTEXT=${env.KUBECTL_DESIRED_CONTEXT}"]) {
+                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
                             dir("${env.WORKSPACE}"){
                                 echo "Current Directory is:"
                                 sh "pwd"
                                 
                                 sh '''
                                     # Set the Kubernetes context explicitly
-                                    kubectl config use-context ${KUBECTL_DESIRED_CONTEXT}
+                                    kubectl config use-context ${KUBECTL_DEV_CONTEXT}
 
                                     # Verify the kubectl context
                                     kubectl config current-context
@@ -301,10 +305,10 @@ pipeline {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
-                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
                             sh '''
                                 # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
-                                KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+                                KUBECTL_GCLOUD_CONTEXT="gke_${GCP_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
                                 kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
 
                                 # Verify the kubectl context
@@ -314,7 +318,7 @@ pipeline {
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
                                 # Set the GKE cluster context
-                                gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${K8S_CLUSTER_PROJ}
+                                gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
 
                                 for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
                                     # Extract the image name and corresponding tag
@@ -323,8 +327,8 @@ pipeline {
                                     tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
 
                                     # Create the corresponding Google Cloud Image name
-                                    gcrImage="gcr.io/${K8S_CLUSTER_PROJ}/$imageName:latest"
-                                    # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${K8S_CLUSTER_PROJ}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
+                                    gcrImage="gcr.io/${GCP_PROJ}/$imageName:latest"
+                                    # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJ}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
                                     
                                     # Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
                                     echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
@@ -369,10 +373,10 @@ pipeline {
         //     steps {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
+        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
         //                     sh '''
         //                         # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
-        //                         KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+        //                         KUBECTL_GCLOUD_CONTEXT="gke_${GCP_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
         //                         kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
 
         //                         # Verify the kubectl context
@@ -382,7 +386,7 @@ pipeline {
         //                         gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
         //                         # Set the GKE cluster context
-        //                         gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${K8S_CLUSTER_PROJ}
+        //                         gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
 
         //                         # Deploy the ingress-nginx controller on Google Cloud Kubernetes Cluster via Skaffold
         //                         skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
@@ -418,13 +422,27 @@ pipeline {
         //     }
         // }
 
+        stage('Create new Google Cloud Kubernetes Cluster using Ansible') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
+                        withEnv(["GCP_PROJ=${env.GCP_PROJ}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
+                            sh '''
+                                ansible-playbook -i ./gke-inventory.ini ./gke-cluster-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJ=${GCP_PROJ}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Deploy Application on Google Cloud Kubernetes Cluster using Ansible') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'), string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","K8S_CLUSTER_PROJ=${env.K8S_CLUSTER_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
+                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
                             sh '''
-                                ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "K8S_CLUSTER_PROJ=${K8S_CLUSTER_PROJ}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
+                                ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJ=${GCP_PROJ}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
                             '''
                         }
                     }
@@ -435,10 +453,10 @@ pipeline {
         stage('Cleanup Agent Node') {
             steps {
                 script {
-                    withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DESIRED_CONTEXT=${env.KUBECTL_DESIRED_CONTEXT}"]) {
+                    withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
                         sh '''                          
                             # Set the Kubernetes context explicitly
-                            kubectl config use-context ${KUBECTL_DESIRED_CONTEXT}
+                            kubectl config use-context ${KUBECTL_DEV_CONTEXT}
 
                             # Verify the kubectl context
                             kubectl config current-context

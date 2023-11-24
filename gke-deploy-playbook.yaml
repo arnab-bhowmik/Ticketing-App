@@ -2,14 +2,13 @@
 - name: Deploy Application on GKE
   hosts: jenkins_agent_node
   gather_facts: false
-
   tasks:
     - name: Set the Kubernetes context 
       shell: |
-        KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+        KUBECTL_GCLOUD_CONTEXT="gke_${GCP_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
         kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
       environment:
-        K8S_CLUSTER_PROJ: "{{ K8S_CLUSTER_PROJ }}"
+        GCP_PROJ: "{{ GCP_PROJ }}"
         K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
         K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
 
@@ -18,10 +17,10 @@
       environment:
         GCLOUD_KEY: "{{ GCLOUD_KEY }}"
 
-    - name: Configure kubectl
-      command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${K8S_CLUSTER_PROJ}
+    - name: Configure kubectl to use the new cluster
+      command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
       environment:
-        K8S_CLUSTER_PROJ: "{{ K8S_CLUSTER_PROJ }}"
+        GCP_PROJ: "{{ GCP_PROJ }}"
         K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
         K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
 
