@@ -12,10 +12,6 @@
         K8S_CLUSTER_PROJ: "{{ K8S_CLUSTER_PROJ }}"
         K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
         K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
-    
-    # - name: Load Kubernetes Configuration
-      # k8s_config:
-      #   context: KUBECTL_GCLOUD_CONTEXT
 
     - name: Authenticate with Google Cloud 
       command: gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
@@ -59,4 +55,3 @@
         kubectl apply -f ./infra/k8s/database/*
         kubectl apply -f ./infra/k8s/auth-service/*
         kubectl apply -f ./infra/k8s/ingress/*
-      # command: kubectl apply -f ./infra/k8s/client/* ./infra/k8s/database/* ./infra/k8s/auth-service/* ./infra/k8s/ingress/*
