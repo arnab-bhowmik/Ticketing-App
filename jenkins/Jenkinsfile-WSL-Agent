@@ -34,17 +34,19 @@ pipeline {
                         sudo apt-get install -y curl jq
                         
                         ## Install Skaffold...
-                        if !(skaffold version)
+                        skaffold_version_output=$(skaffold version 2>&1)
+                        if [ $? -eq 0 ]
                         then
+                            echo "Skaffold is already installed"
+                        else
                             echo "Installing Skaffold"
                             curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
                             sudo install skaffold /usr/local/bin/
-                        else
-                            echo "Skaffold is already installed"
                         fi
                         
+                        
                         ## Install Docker...
-                        docker_version_output=$(docker -v 2>&1)
+                        docker_version_output=$(docker --version 2>&1)
                         if [ $? -eq 0 ]
                         then
                             echo "Docker is already installed"
@@ -109,7 +111,7 @@ pipeline {
 
 
                         ## Install Ansible...
-                        ansible_version_output=$(ansible --version)
+                        ansible_version_output=$(ansible --version 2>&1)
                         if [ $? -eq 0 ]
                         then
                             echo "Ansible is already installed"
@@ -122,7 +124,7 @@ pipeline {
 
 
                         ## Install Terraform...
-                        terraform_version_output=$(terraform --version)
+                        terraform_version_output=$(terraform --version 2>&1)
                         if [ $? -eq 0 ]
                         then
                             echo "Terraform is already installed"
@@ -143,7 +145,7 @@ pipeline {
 
 
                         ## Install Google Cloud SDK...
-                        gcloud_version_output=$(gcloud version)
+                        gcloud_version_output=$(gcloud version 2>&1)
                         if [ $? -eq 0 ]
                         then
                             echo "Google Cloud SDK is already installed"
