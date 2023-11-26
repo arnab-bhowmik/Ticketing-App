@@ -14,13 +14,13 @@
   tasks:
     - name: Initiate Terraform Workspace
       command: terraform init
-      args:
-        chdir: "/path/to/terraform/directory"
+      # args:
+      #   chdir: "/path/to/terraform/directory"
 
     - name: Create Kubernetes Cluster
       command: terraform apply -auto-approve
-      args:
-        chdir: "/path/to/terraform/directory"
+      # args:
+      #   chdir: "/path/to/terraform/directory"
 
     - name: Configure kubectl to use the new cluster
       command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
