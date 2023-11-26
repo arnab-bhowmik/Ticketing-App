@@ -17,6 +17,11 @@
       # args:
       #   chdir: "/path/to/terraform/directory"
 
+    - name: Create terraform.tfvars file
+      template:
+        src: ./terraform.tfvars.j2
+        dest: ./terraform.tfvars
+
     - name: Create Kubernetes Cluster
       command: terraform apply -auto-approve
       # args:
