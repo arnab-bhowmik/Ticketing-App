@@ -2,23 +2,24 @@
 - name: Deploy Application on GKE
   hosts: jenkins_agent_node
   gather_facts: false
+  environment:
+    GCLOUD_KEY: "{{ GCLOUD_KEY }}"
+    GCP_PROJ: "{{ GCP_PROJ }}"
+    K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
+    K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
+    MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
+    MODULE_NAMESPACE_2: "{{ MODULE_NAMESPACE_2 }}"
+    JWT_KEY: "{{ JWT_KEY }}"
+  
   tasks:
     - name: Authenticate with Google Cloud 
       command: gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
-      environment:
-        GCLOUD_KEY: "{{ GCLOUD_KEY }}"
 
     - name: Configure kubectl to use the new cluster
       command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
-      environment:
-        GCP_PROJ: "{{ GCP_PROJ }}"
-        K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
-        K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
 
     - name: Deploy Ingress Controller via Skaffold
       command: skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
-      environment:
-        MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
       register: skaffold_result
 
     - name: Debug Skaffold Output
@@ -30,9 +31,6 @@
 
     - name: Create JWT Secret
       command: kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
-      environment:
-        MODULE_NAMESPACE_2: "{{ MODULE_NAMESPACE_2 }}"
-        JWT_KEY: "{{ JWT_KEY }}"
 
     - name: Deploy Updated Kubernetes Manifests
       shell: |
