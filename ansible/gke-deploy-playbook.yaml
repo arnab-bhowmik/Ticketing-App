@@ -1,0 +1,47 @@
+---
+- name: Deploy Application on GKE
+  hosts: jenkins_agent_node
+  gather_facts: false
+  environment:
+    GCLOUD_KEY: "{{ GCLOUD_KEY }}"
+    GCP_PROJECT: "{{ GCP_PROJECT }}"
+    JWT_KEY: "{{ JWT_KEY }}"
+    K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
+    K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
+    MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
+    MODULE_NAMESPACE_2: "{{ MODULE_NAMESPACE_2 }}"
+    PROJ_DIR: "{{ PROJ_DIR }}"
+  
+  tasks:
+    - name: Authenticate with Google Cloud 
+      command: gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
+
+    - name: Configure kubectl to use the new cluster
+      command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
+
+    - name: Deploy Ingress Controller via Skaffold
+      command: skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
+      register: skaffold_result
+      args:
+        chdir: "{{ PROJ_DIR }}"
+
+    - name: Debug Skaffold Output
+      debug:
+        var: skaffold_result
+
+    - name: Create Application Namespace
+      command: kubectl apply -f ./namespace/*
+      args:
+        chdir: "{{ PROJ_DIR }}/infra/k8s"
+
+    - name: Create JWT Secret
+      command: kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
+
+    - name: Deploy Updated Kubernetes Manifests
+      shell: |
+        kubectl apply -f ./client/*
+        kubectl apply -f ./database/*
+        kubectl apply -f ./auth-service/*
+        kubectl apply -f ./ingress/*
+      args:
+        chdir: "{{ PROJ_DIR }}/infra/k8s"
