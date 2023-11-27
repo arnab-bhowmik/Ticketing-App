@@ -22,6 +22,8 @@
       template:
         src: ./terraform.tfvars.j2
         dest: ./terraform.tfvars
+      args:
+        chdir: "${PROJ_DIR}/infra/terraform-scripts"
 
     - name: Create Kubernetes Cluster
       command: terraform apply -auto-approve
