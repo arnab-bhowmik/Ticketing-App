@@ -1,0 +1,40 @@
+---
+- name: Deploy Application to GKE
+  hosts: gke_prod_cluster
+  gather_facts: false
+  tasks:
+    # - name: Load Kubernetes Configuration
+    #   community.kubernetes.k8s_config:
+    #     context: gke_cluster_context_name
+
+    # - name: Apply Kubernetes Manifest
+    #   community.kubernetes.k8s:
+    #     state: present
+    #     src: path/to/kubernetes/manifest.yaml
+
+    # Set the Kubernetes context explicitly to the Google Cloud Kubernetes Cluster
+    KUBECTL_GCLOUD_CONTEXT="gke_${K8S_CLUSTER_PROJ}_${K8S_CLUSTER_ZONE}_${K8S_CLUSTER_NAME}"
+    kubectl config use-context ${KUBECTL_GCLOUD_CONTEXT}
+
+    # Verify the kubectl context
+    kubectl config current-context
+
+    - name: Set Google Cloud auth
+      command: gcloud auth activate-service-account --key-file=/path/to/keyfile.json
+
+    - name: Configure kubectl
+      command: gcloud container clusters get-credentials your-cluster-name --zone your-cluster-zone --project your-gcp-project
+
+    - name: Deploy application
+      k8s:
+        definition: /path/to/app-deployment.yaml
+        state: present
+
+    - name: Deploy application on all clusters
+      # Your common deployment tasks for all clusters
+      # ...
+
+    - name: Deploy application on a specific cluster
+      when: "'cluster1' in inventory_hostname"
+      # Your tasks specific to this cluster
+      # ...
