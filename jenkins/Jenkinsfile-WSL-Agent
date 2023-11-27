@@ -5,7 +5,7 @@ pipeline {
         MODULE_NAMESPACE_1  = 'ingress-nginx'
         MODULE_NAMESPACE_2  = 'ticketing-app'
         
-        GCP_PROJ            = 'ticketing-app-prod' 
+        GCP_PROJECT         = 'ticketing-app-prod' 
         GCP_REGION          = 'us-east1'
 
         K8S_CLUSTER_NAME    = 'ticketing-app-k8-cluster' 
@@ -44,7 +44,7 @@ pipeline {
                             sudo install skaffold /usr/local/bin/
                         fi
                         
-                        
+
                         ## Install Docker...
                         docker_version_output=$(docker --version 2>&1)
                         if [ $? -eq 0 ]
@@ -328,7 +328,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
-                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
                             sh '''
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
@@ -340,8 +340,8 @@ pipeline {
                                     tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
 
                                     # Create the corresponding Google Cloud Image name
-                                    gcrImage="gcr.io/${GCP_PROJ}/$imageName:latest"
-                                    # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJ}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
+                                    gcrImage="gcr.io/${GCP_PROJECT}/$imageName:latest"
+                                    # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
                                     
                                     # Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
                                     echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
@@ -451,10 +451,10 @@ pipeline {
         //     steps {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
-        //                 withEnv(["GCP_PROJ=${env.GCP_PROJ}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
+        //                 withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
         //                     sh '''
         //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
-        //                         ansible-playbook -i ./gke-inventory.ini ./gke-cluster-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJ=${GCP_PROJ}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
+        //                         ansible-playbook -i ./gke-inventory.ini ./gke-cluster-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
         //                     '''
         //                 }
         //             }
@@ -466,10 +466,10 @@ pipeline {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
-                        withEnv(["GCP_PROJ=${env.GCP_PROJ}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
+                        withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
                             sh '''
                                 # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
-                                ansible-playbook -i ./gke-inventory.ini ./gke-cluster-terraform-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJ=${GCP_PROJ}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
+                                ansible-playbook -i ./gke-inventory.ini ./gke-cluster-terraform-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
                             '''
                         }
                     }
@@ -481,13 +481,13 @@ pipeline {
         //     steps {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
+        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
         //                     sh '''
         //                         # Authenticate with Google Cloud using a service account key
         //                         gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
         //                         # Set the GKE cluster context
-        //                         gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
+        //                         gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
 
         //                         # Deploy the ingress-nginx controller on Google Cloud Kubernetes Cluster via Skaffold
         //                         skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
@@ -527,10 +527,10 @@ pipeline {
         //     steps {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'), string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJ=${env.GCP_PROJ}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
+        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
         //                     sh '''
         //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
-        //                         ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJ=${GCP_PROJ}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
+        //                         ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
         //                     '''
         //                 }
         //             }

@@ -4,8 +4,8 @@
     directly with kubectl and the Jenkins jobs don't have reference to the files at the time of execution.
 
 2) GCloud: There is no command to push images directly to Google Cloud Artifact Registry of type Docker unless it is of gcr.io domain.
-            "gcr.io/${GCP_PROJ}/$imageName:latest" --> works fine with docker push
-            "${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJ}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest" --> Doesn't work
+            "gcr.io/${GCP_PROJECT}/$imageName:latest" --> works fine with docker push
+            "${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest" --> Doesn't work
 
 3) Ansible: Unable to execute skaffold commands and reference YAML file paths from the ansible playbook when not placed at the root dir.
 

@@ -4,7 +4,7 @@
   gather_facts: false
   environment:
     GCLOUD_KEY: "{{ GCLOUD_KEY }}"
-    GCP_PROJ: "{{ GCP_PROJ }}"
+    GCP_PROJECT: "{{ GCP_PROJECT }}"
     K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
     K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
     MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
@@ -16,7 +16,7 @@
       command: gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
     - name: Configure kubectl to use the new cluster
-      command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJ}
+      command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
 
     - name: Deploy Ingress Controller via Skaffold
       command: skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
