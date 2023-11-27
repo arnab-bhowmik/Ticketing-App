@@ -16,7 +16,7 @@
     - name: Initiate Terraform Workspace
       command: terraform init
       args:
-        chdir: "${PROJ_DIR}/infra/terraform-scripts"
+        chdir: "{{ PROJ_DIR }}/infra/terraform-scripts"
 
     - name: Create terraform.tfvars file
       template:
@@ -26,7 +26,7 @@
     - name: Create Kubernetes Cluster
       command: terraform apply -auto-approve
       args:
-        chdir: "${PROJ_DIR}/infra/terraform-scripts"
+        chdir: "{{ PROJ_DIR }}/infra/terraform-scripts"
 
     - name: Configure kubectl to use the new cluster
       command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
