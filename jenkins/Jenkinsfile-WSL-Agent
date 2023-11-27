@@ -14,7 +14,7 @@ pipeline {
         K8S_NODE_COUNT      = 1
 
         KUBECTL_DEV_CONTEXT = 'docker-desktop'
-        DOCKER_IMAGE_NAMES = ' '
+        DOCKER_IMAGE_NAMES  = ' '
 
         ARTIFACT_REGISTRY_NAME = 'ticketing-app-artifact-registry'
         ARTIFACT_REGISTRY_LOCATION = 'us'
@@ -468,7 +468,7 @@ pipeline {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
                         withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}"]) {
                             sh '''
-                                # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
+                                # Ensure the service account has correct access - container.admin/container.clusterAdmin, compute.viewer and iam.serviceAccountUser
                                 ansible-playbook -i ./gke-inventory.ini ./gke-cluster-terraform-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}"
                             '''
                         }
@@ -523,19 +523,19 @@ pipeline {
         //     }
         // }
 
-        // stage('Deploy Application on Google Cloud Kubernetes Cluster using Ansible') {
-        //     steps {
-        //         script {
-        //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'), string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
-        //                     sh '''
-        //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
-        //                         ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
-        //                     '''
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Deploy Application on Google Cloud Kubernetes Cluster using Ansible') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'), string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
+                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {
+                            sh '''
+                                # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
+                                ansible-playbook -i ./gke-inventory.ini ./gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
     }
 }

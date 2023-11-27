@@ -34,7 +34,7 @@ provider "google" {
 }
 
 resource "google_container_cluster" "primary" {
-  name     = "${var.k8s_cluster_name}-tf"
+  name     = var.k8s_cluster_name
   location = var.k8s_cluster_zone
 
   remove_default_node_pool = false
