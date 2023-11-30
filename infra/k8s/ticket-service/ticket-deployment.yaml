@@ -18,6 +18,8 @@ spec:
           image: ticketing-app-ticket-service:latest
           imagePullPolicy: Never
           env:
+            - name: MONGO_URI
+              value: 'mongodb://ticket-mongo-service:27017/tickets'
             - name: JWT_KEY
               valueFrom:
                 secretKeyRef:
