@@ -1,11 +1,13 @@
 import request from "supertest";
 import { app } from "../../app";
-import { Ticket } from "../../models/ticket";
+import mongoose from "mongoose";
 
 // ------------ Test Scenarios for identifying if current user is logged in and can see tickets ------------
 
 it('returns status of 404 if the ticket is not found', async () => {
-    await request(app).get('/api/tickets/Ticket_2').send().expect(404);
+    // Create a random id which doesn't correspond to an existing Ticket
+    const id = new mongoose.Types.ObjectId().toHexString();
+    await request(app).get(`/api/tickets/${id}`).send().expect(404);
 });
 
 it('returns the ticket if the ticket is found', async () => {
