@@ -28,7 +28,7 @@ it('returns an error if an invalid price is provided', async () => {
     await request(app).post('/api/tickets').set('Cookie', global.signin()).send({ title: 'Ticket_1' }).expect(400);
 });
 
-it('creates a ticket with valid parameters', async () => {
+it('creates a ticket with valid details', async () => {
     // Check the count of tickets in Mongo Collection, ideally should be Zero!
     let tickets = await Ticket.find({});
     expect(tickets.length).toEqual(0);
