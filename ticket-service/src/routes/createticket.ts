@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { requireAuth, validateRequest, BadRequestError } from '@ticketing_org/custom-modules';
+import { requireAuth, validateRequest } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
 
 const router = express.Router();

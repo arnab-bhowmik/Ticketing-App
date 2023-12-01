@@ -1,8 +1,6 @@
 import request from "supertest";
 import { app } from "../../app";
 import { Ticket } from "../../models/ticket";
-import { DatabaseConnectionError } from "@ticketing_org/custom-modules";
-import { Collection } from "mongoose";
 
 // ------------ Test Scenarios for identifying if current user is logged in and can create tickets ------------
 
