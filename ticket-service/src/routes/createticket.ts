@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { requireAuth, validateRequest, BadRequestError } from '@ticketing_org/custom-modules';
+import { Ticket } from '../models/ticket';
 
 const router = express.Router();
 
@@ -15,8 +16,16 @@ router.post('/api/tickets', requireAuth, [
     ], 
     // Check for any Validation errors
     validateRequest,
-    (req: Request, res: Response) => {
-    res.sendStatus(200);
-});
+    async (req: Request, res: Response) => {
+        const { title, price } = req.body;
+        const ticket = Ticket.build({
+            title,
+            price,
+            userId: req.currentUser!.id
+        });
+        await ticket.save();
+        res.status(201).send(ticket);
+    }
+);
 
 export { router as createTicketRouter };

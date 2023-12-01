@@ -1,5 +1,8 @@
 import request from "supertest";
 import { app } from "../../app";
+import { Ticket } from "../../models/ticket";
+import { DatabaseConnectionError } from "@ticketing_org/custom-modules";
+import { Collection } from "mongoose";
 
 // ------------ Test Scenarios for identifying if current user is logged in and can create tickets ------------
 
@@ -28,5 +31,15 @@ it('returns an error if an invalid price is provided', async () => {
 });
 
 it('creates a ticket with valid parameters', async () => {
+    // Check the count of tickets in Mongo Collection, ideally should be Zero!
+    let tickets = await Ticket.find({});
+    expect(tickets.length).toEqual(0);
+    
     await request(app).post('/api/tickets').set('Cookie', global.signin()).send({ title: 'Ticket_1', price: 100 }).expect(201);
+
+    // Check the count of tickets & ticket details in Mongo Collection after successful ticket creation
+    tickets = await Ticket.find({});
+    expect(tickets.length).toEqual(1);
+    expect(tickets[0].title).toEqual('Ticket_1');
+    expect(tickets[0].price).toEqual(100);
 });
