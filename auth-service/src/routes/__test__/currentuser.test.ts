@@ -4,7 +4,7 @@ import { app } from "../../app";
 // ------------ Test Scenarios for identifying if current user is logged in ------------
 
 it('returns details about the current user', async () => {
-    const cookie = await authCookie();
+    const cookie = await global.signin();
     const response = await request(app)
     .get('/api/users/currentuser')
     .set('Cookie', cookie)

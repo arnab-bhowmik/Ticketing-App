@@ -4,7 +4,11 @@ import request from "supertest";
 import { app } from '../app';
 
 declare global {
-    var authCookie: () => Promise<string[]>;
+    namespace NodeJS {
+        interface Global {
+            signin: () => Promise<string[]>;
+        } 
+    }
 }
 
 let mongo: any;
@@ -36,7 +40,7 @@ afterAll(async () => {
 });
 
 // Have a cookie created on User Sign Up to be used by other test scripts 
-global.authCookie = async () => {
+global.signin = async () => {
     const email = 'user1@abc.com';
     const password = 'abc123';
 
