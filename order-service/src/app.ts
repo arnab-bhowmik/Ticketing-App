@@ -4,6 +4,10 @@ import { json } from "body-parser";
 import cookieSession from "cookie-session";
 
 import { errorHandler, NotFoundError, currentUser } from "@ticketing_org/custom-modules";
+import { createOrderRouter } from "./routes/createorder";
+import { showOrderRouter } from "./routes/showorder";
+import { showAllOrdersRouter } from "./routes/showallorders";
+import { deleteOrderRouter } from "./routes/deleteorder";
 
 const app = express();
 app.set('trust proxy', true);
@@ -13,6 +17,11 @@ app.use(cookieSession({
     // secure: true
 }));
 app.use(currentUser);
+
+app.use(createOrderRouter);
+app.use(showOrderRouter);
+app.use(showAllOrdersRouter);
+app.use(deleteOrderRouter);
 
 app.get('*', async () => {
     throw new NotFoundError();
