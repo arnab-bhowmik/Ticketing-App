@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
+import { OrderStatus } from "@ticketing_org/custom-modules";
 
 // Interface to define the properties the Order Schema has
 interface OrderAttribute {
     userId: string,
-    status: string,
+    status: OrderStatus,
     expiresAt: Date,
     ticket: TicketDoc
 }
@@ -11,7 +12,7 @@ interface OrderAttribute {
 // Interface to define the properties the Order Document has
 interface OrderDoc extends mongoose.Document {
     userId: string,
-    status: string,
+    status: OrderStatus,
     expiresAt: Date,
     ticket: TicketDoc
 }
@@ -28,7 +29,9 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        required: true
+        required: true,
+        enum: Object.values(OrderStatus),
+        default: OrderStatus.Created
     },
     expiresAt: {
         type: mongoose.Schema.Types.Date,
