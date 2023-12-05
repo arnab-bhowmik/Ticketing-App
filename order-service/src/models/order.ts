@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { OrderStatus } from "@ticketing_org/custom-modules";
+import { TicketDoc } from "./ticket";
 
 // Interface to define the properties the Order Schema has
 interface OrderAttribute {
@@ -57,4 +58,4 @@ orderSchema.statics.build = (attribute: OrderAttribute) => {
 
 const Order = mongoose.model<OrderDoc, OrderModel>('Order', orderSchema);
 
-export { Order };
+export { Order, OrderStatus };
