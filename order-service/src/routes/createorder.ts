@@ -9,10 +9,6 @@ const router = express.Router();
 
 const EXPIRATION_WINDOW_SECS = 5*60;
 
-router.post('/api/orders', async (req: Request, res: Response) => {
-    res.status(200).send({});
-});
-
 router.post('/api/orders', requireAuth, [
     body('ticketId')
      .notEmpty()
