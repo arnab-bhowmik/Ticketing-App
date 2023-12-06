@@ -33,4 +33,4 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
     res.status(204).send(order);
 });
 
-export { router as deleteOrderRouter };
+export { router as cancelOrderRouter };

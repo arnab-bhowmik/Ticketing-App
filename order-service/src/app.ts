@@ -7,7 +7,7 @@ import { errorHandler, NotFoundError, currentUser } from "@ticketing_org/custom-
 import { createOrderRouter } from "./routes/createorder";
 import { showOrderRouter } from "./routes/showorder";
 import { showAllOrdersRouter } from "./routes/showallorders";
-import { deleteOrderRouter } from "./routes/deleteorder";
+import { cancelOrderRouter } from "./routes/cancelorder";
 
 const app = express();
 app.set('trust proxy', true);
@@ -21,7 +21,7 @@ app.use(currentUser);
 app.use(createOrderRouter);
 app.use(showOrderRouter);
 app.use(showAllOrdersRouter);
-app.use(deleteOrderRouter);
+app.use(cancelOrderRouter);
 
 app.get('*', async () => {
     throw new NotFoundError();
