@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { requireAuth, validateRequest, NotFoundError, OrderStatus, BadRequestError, NotAuthorizedError } from '@ticketing_org/custom-modules';
-import { Order } from '../models/order';
+import { requireAuth, validateRequest, NotFoundError, NotAuthorizedError } from '@ticketing_org/custom-modules';
+import { Order, OrderStatus } from '../models/order';
 
 const router = express.Router();
 
