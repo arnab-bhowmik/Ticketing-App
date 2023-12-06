@@ -4,6 +4,7 @@ import { body } from 'express-validator';
 import { requireAuth, validateRequest, NotFoundError, BadRequestError } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
 import { Order, OrderStatus } from '../models/order';
+import { OrderCreatedPublisher } from '../events/publishers/order-created-publisher';
 
 const router = express.Router();
 
@@ -40,6 +41,19 @@ router.post('/api/orders', requireAuth, [
             ticket: ticket
         })
         await order.save();
+
+        // Publish an event for Order Creation
+        new OrderCreatedPublisher().publish({
+            id:         order.id,
+            userId:     order.userId,
+            status:     order.status,
+            expiresAt:  order.expiresAt.toISOString(),
+            ticket: {
+                id:     ticket.id,
+                price:  ticket.price
+            }
+        });
+
         res.status(201).send(order);
     }
 );
