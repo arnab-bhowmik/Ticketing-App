@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { requireAuth, validateRequest, NotFoundError, OrderStatus, BadRequestError } from '@ticketing_org/custom-modules';
+import { requireAuth, validateRequest, NotFoundError, BadRequestError } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
-import { Order } from '../models/order';
+import { Order, OrderStatus } from '../models/order';
 
 const router = express.Router();
 
