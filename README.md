@@ -1,2 +1,2 @@
 # Ticketing-App
-App for Ticket buy &amp; sell 
+App for Ticket buy & sell 
