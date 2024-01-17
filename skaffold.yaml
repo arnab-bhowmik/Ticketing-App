@@ -59,6 +59,8 @@ profiles:
               dest: .
 - name: prod
   build:
+    googleCloudBuild:
+      projectId: ticketing-app-prod
     artifacts:
       - image: gcr.io/ticketing-app-prod/ticketing-app-auth-service
         context: auth-service
@@ -92,5 +94,4 @@ profiles:
           manual:
             - src: 'src/**/*.ts'
               dest: .
-    googleCloudBuild:
-      projectId: ticketing-app-prod
+    
