@@ -19,16 +19,16 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
     await order.save();
 
     // Publish an event for Order Cancellation
-    new OrderCancelledPublisher().publish({
-        id:         order.id,
-        userId:     order.userId,
-        status:     order.status,
-        expiresAt:  order.expiresAt.toISOString(),
-        ticket: {
-            id:     order.ticket.id,
-            price:  order.ticket.price
-        }
-    });
+    // new OrderCancelledPublisher(natsWrapper.client).publish({
+    //     id:         order.id,
+    //     userId:     order.userId,
+    //     status:     order.status,
+    //     expiresAt:  order.expiresAt.toISOString(),
+    //     ticket: {
+    //         id:     order.ticket.id,
+    //         price:  order.ticket.price
+    //     }
+    // });
 
     res.status(204).send(order);
 });
