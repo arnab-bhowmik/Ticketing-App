@@ -50,7 +50,7 @@ router.post('/api/orders', requireAuth, [
         await order.save();
 
         // Publish an event for Order Creation
-        new OrderCreatedPublisher(exchange,key,rabbitmq_k8s_service,rabbitmq_username,rabbitmq_password).publish({
+        new OrderCreatedPublisher(exchange,key,rabbitmq_k8s_service,rabbitmq_k8s_service_port).publish({
             id:         order.id,
             userId:     order.userId,
             status:     order.status,

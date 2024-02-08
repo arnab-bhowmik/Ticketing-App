@@ -34,7 +34,7 @@ router.post('/api/tickets', requireAuth, [
         await ticket.save();
 
         // Publish an event for Ticket Creation
-        new TicketCreatedPublisher(exchange,key,rabbitmq_k8s_service,rabbitmq_username,rabbitmq_password).publish({
+        new TicketCreatedPublisher(exchange,key,rabbitmq_k8s_service,rabbitmq_k8s_service_port).publish({
             id:     ticket.id,
             title:  ticket.title,
             price:  ticket.price,
