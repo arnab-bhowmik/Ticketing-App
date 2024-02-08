@@ -10,6 +10,12 @@ const router = express.Router();
 
 const EXPIRATION_WINDOW_SECS = 5*60;
 
+const exchange              = 'rabbitmq-exchange';
+const key                   = 'order.#';
+const rabbitmq_k8s_service  = 'rabbitmq-cluster';
+const rabbitmq_username     = 'example';
+const rabbitmq_password     = 'whyareyoulookinghere';
+
 router.post('/api/orders', requireAuth, [
     body('ticketId')
      .notEmpty()
@@ -43,16 +49,16 @@ router.post('/api/orders', requireAuth, [
         await order.save();
 
         // Publish an event for Order Creation
-        // new OrderCreatedPublisher(natsWrapper.client).publish({
-        //     id:         order.id,
-        //     userId:     order.userId,
-        //     status:     order.status,
-        //     expiresAt:  order.expiresAt.toISOString(),
-        //     ticket: {
-        //         id:     ticket.id,
-        //         price:  ticket.price
-        //     }
-        // });
+        new OrderCreatedPublisher(exchange,key,rabbitmq_k8s_service,rabbitmq_username,rabbitmq_password).publish({
+            id:         order.id,
+            userId:     order.userId,
+            status:     order.status,
+            expiresAt:  order.expiresAt.toISOString(),
+            ticket: {
+                id:     ticket.id,
+                price:  ticket.price
+            }
+        });
 
         res.status(201).send(order);
     }
