@@ -6,11 +6,12 @@ import { TicketCreatedPublisher } from '../events/publishers/ticket-created-publ
 
 const router = express.Router();
 
-const exchange              = 'rabbitmq-exchange';
-const key                   = 'ticket.created';
-const rabbitmq_k8s_service  = 'rabbitmq-cluster';
-const rabbitmq_username     = 'example';
-const rabbitmq_password     = 'whyareyoulookinghere';
+const exchange                  = 'rabbitmq-exchange';
+const key                       = 'ticket.created';
+const rabbitmq_k8s_service      = 'rabbitmq-cluster';
+const rabbitmq_k8s_service_port = 5672;
+// const rabbitmq_username     = 'example';
+// const rabbitmq_password     = 'whyareyoulookinghere';
 
 router.post('/api/tickets', requireAuth, [
     body('title')
