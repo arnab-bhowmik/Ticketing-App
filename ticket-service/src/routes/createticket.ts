@@ -2,8 +2,15 @@ import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { requireAuth, validateRequest } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
+import { TicketCreatedPublisher } from '../events/publishers/ticket-created-publisher';
 
 const router = express.Router();
+
+const exchange              = 'rabbitmq-exchange';
+const key                   = 'ticket.created';
+const rabbitmq_k8s_service  = 'rabbitmq-cluster';
+const rabbitmq_username     = 'example';
+const rabbitmq_password     = 'whyareyoulookinghere';
 
 router.post('/api/tickets', requireAuth, [
     body('title')
@@ -24,6 +31,15 @@ router.post('/api/tickets', requireAuth, [
             userId: req.currentUser!.id
         });
         await ticket.save();
+
+        // Publish an event for Ticket Creation
+        new TicketCreatedPublisher(exchange,key,rabbitmq_k8s_service,rabbitmq_username,rabbitmq_password).publish({
+            id:     ticket.id,
+            title:  ticket.title,
+            price:  ticket.price,
+            userId: ticket.userId
+        });
+
         res.status(201).send(ticket);
     }
 );

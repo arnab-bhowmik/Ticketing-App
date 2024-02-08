@@ -11,7 +11,7 @@ const router = express.Router();
 const EXPIRATION_WINDOW_SECS = 5*60;
 
 const exchange              = 'rabbitmq-exchange';
-const key                   = 'order.#';
+const key                   = 'order.created';
 const rabbitmq_k8s_service  = 'rabbitmq-cluster';
 const rabbitmq_username     = 'example';
 const rabbitmq_password     = 'whyareyoulookinghere';

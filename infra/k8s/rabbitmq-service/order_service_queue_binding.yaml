@@ -1,7 +1,7 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
-  name: rabbitmq-binding
+  name: order-service-binding
   namespace: ticketing-app
 spec:
   source: rabbitmq-exchange     # an existing exchange

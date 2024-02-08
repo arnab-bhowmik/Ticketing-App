@@ -1,0 +1,12 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: ticket-service-binding
+  namespace: ticketing-app
+spec:
+  source: rabbitmq-exchange     # an existing exchange
+  destination: rabbitmq-queue   # an existing queue
+  destinationType: queue        # can be 'queue' or 'exchange'
+  routingKey: "ticket.#"
+  rabbitmqClusterReference:
+    name: rabbitmq-cluster

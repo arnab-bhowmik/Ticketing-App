@@ -19,7 +19,7 @@ manifests:
   - ./infra/k8s/ticket-service/*
   - ./infra/k8s/order-service/*
   - ./infra/k8s/ingress/*
-  - ./infra/k8s/rabbitmq-service/*
+  # - ./infra/k8s/rabbitmq-service/*
 profiles:
 - name: dev
   build:
