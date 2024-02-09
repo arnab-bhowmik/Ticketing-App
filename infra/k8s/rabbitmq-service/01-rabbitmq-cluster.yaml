@@ -17,4 +17,3 @@ spec:
     storage: 10Gi
   service:
     type: ClusterIP
-    # port: 5672
