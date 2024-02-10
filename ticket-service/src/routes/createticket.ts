@@ -1,17 +1,18 @@
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { requireAuth, validateRequest } from '@ticketing_org/custom-modules';
+import { openRabbitMQConnection, closeRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { Ticket } from '../models/ticket';
 import { TicketCreatedPublisher } from '../events/publishers/ticket-created-publisher';
 
 const router = express.Router();
 
-const exchange                  = 'rabbitmq-exchange';
-const key                       = 'ticket.created';
-const rabbitmq_username         = 'example';
-const rabbitmq_password         = 'whyareyoulookinghere';
-const rabbitmq_k8s_service      = 'rabbitmq-cluster';
-const rabbitmq_k8s_service_port = 5672;
+const exchange            = 'rabbitmq-exchange';
+const routingKey          = 'ticket.created';
+const rabbitmqUsername    = 'example';
+const rabbitmqPassword    = 'whyareyoulookinghere';
+const rabbitmqService     = 'rabbitmq-cluster';
+const rabbitmqServicePort = 5672;
 
 router.post('/api/tickets', requireAuth, [
     body('title')
@@ -33,13 +34,19 @@ router.post('/api/tickets', requireAuth, [
         });
         await ticket.save();
 
-        // Publish an event for Ticket Creation
-        new TicketCreatedPublisher(exchange,key,rabbitmq_username,rabbitmq_password,rabbitmq_k8s_service,rabbitmq_k8s_service_port).publish({
-            id:     ticket.id,
-            title:  ticket.title,
-            price:  ticket.price,
-            userId: ticket.userId
-        });
+        // Establish connection with RabbitMQ service for publishing Events. Keep the connection open.
+        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService,rabbitmqServicePort);
+        if (connection) {
+            console.log('Successfully established connection to RabbitMQ Service');
+            // Publish an event for Ticket Creation
+            await new TicketCreatedPublisher(connection!,exchange,routingKey).publish({
+                id:     ticket.id,
+                title:  ticket.title,
+                price:  ticket.price,
+                userId: ticket.userId
+            }); 
+            // await closeRabbitMQConnection(connection!);
+        }
 
         res.status(201).send(ticket);
     }
