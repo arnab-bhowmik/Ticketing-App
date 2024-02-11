@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 import { app } from "./app";
 import { openRabbitMQConnection, closeRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
+import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
 
-const queue               = 'rabbitmq-queue';
+const queue               = 'order-service-queue';
 const rabbitmqUsername    = 'example';
 const rabbitmqPassword    = 'whyareyoulookinghere';
 const rabbitmqService     = 'rabbitmq-cluster';
@@ -37,6 +38,8 @@ const startUp = async () => {
 
     // Listen for Ticket Creation events
     await new TicketCreatedListener(connection!, queue).listen();
+    // Listen for Ticket Update events
+    await new TicketUpdatedListener(connection!, queue).listen();
 }
 
 startUp();
