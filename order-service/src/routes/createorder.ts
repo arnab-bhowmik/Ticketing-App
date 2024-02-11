@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { requireAuth, validateRequest, NotFoundError, BadRequestError } from '@ticketing_org/custom-modules';
+import { openRabbitMQConnection, closeRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { Ticket } from '../models/ticket';
 import { Order, OrderStatus } from '../models/order';
 import { OrderCreatedPublisher } from '../events/publishers/order-created-publisher';
@@ -10,12 +11,12 @@ const router = express.Router();
 
 const EXPIRATION_WINDOW_SECS = 5*60;
 
-const exchange                  = 'rabbitmq-exchange';
-const key                       = 'order.created';
-const rabbitmq_username         = 'example';
-const rabbitmq_password         = 'whyareyoulookinghere';
-const rabbitmq_k8s_service      = 'rabbitmq-cluster';
-const rabbitmq_k8s_service_port = 5672;
+const exchange            = 'rabbitmq-exchange';
+const routingKey          = 'order.created';
+const rabbitmqUsername    = 'example';
+const rabbitmqPassword    = 'whyareyoulookinghere';
+const rabbitmqService     = 'rabbitmq-cluster';
+const rabbitmqServicePort = 5672;
 
 router.post('/api/orders', requireAuth, [
     body('ticketId')
@@ -49,17 +50,23 @@ router.post('/api/orders', requireAuth, [
         })
         await order.save();
 
-        // Publish an event for Order Creation
-        new OrderCreatedPublisher(exchange,key,rabbitmq_username,rabbitmq_password,rabbitmq_k8s_service,rabbitmq_k8s_service_port).publish({
-            id:         order.id,
-            userId:     order.userId,
-            status:     order.status,
-            expiresAt:  order.expiresAt.toISOString(),
-            ticket: {
-                id:     ticket.id,
-                price:  ticket.price
-            }
-        });
+        // Establish connection with RabbitMQ service for publishing Events. Keep the connection open.
+        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService,rabbitmqServicePort);
+        if (connection) {
+            console.log('Successfully established connection to RabbitMQ Service');
+            // Publish an event for Order Creation
+            await new OrderCreatedPublisher(connection!,exchange,routingKey).publish({
+                id:         order.id,
+                userId:     order.userId,
+                status:     order.status,
+                expiresAt:  order.expiresAt.toISOString(),
+                ticket: {
+                    id:     ticket.id,
+                    price:  ticket.price
+                }
+            });
+            // await closeRabbitMQConnection(connection!); 
+        }         
 
         res.status(201).send(order);
     }
