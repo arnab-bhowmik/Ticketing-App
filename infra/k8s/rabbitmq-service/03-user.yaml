@@ -9,4 +9,4 @@ spec:
   rabbitmqClusterReference:
     name: rabbitmq-cluster 
   importCredentialsSecret:
-    name: rabbitmq-user-imported-credentials
+    name: rabbitmq-user-imported-creds-secret
