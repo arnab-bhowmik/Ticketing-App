@@ -25,6 +25,22 @@ spec:
                 secretKeyRef:
                   name: jwt-secret
                   key: JWT_KEY
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-user-imported-creds-secret
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-user-imported-creds-secret
+                  key: password
+            - name: RABBITMQ_SERVICE
+              value: 'rabbitmq-cluster'
+            - name: RABBITMQ_EXCHANGE
+              value: 'rabbitmq-exchange'
+            - name: RABBITMQ_QUEUE
+              value: 'ticket-service-queue'
 ---
 apiVersion: v1
 kind: Service

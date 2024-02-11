@@ -7,12 +7,12 @@ import { TicketCreatedPublisher } from '../events/publishers/ticket-created-publ
 
 const router = express.Router();
 
-const exchange            = 'rabbitmq-exchange';
-const routingKey          = 'ticket.created';
-const rabbitmqUsername    = 'example';
-const rabbitmqPassword    = 'whyareyoulookinghere';
-const rabbitmqService     = 'rabbitmq-cluster';
-const rabbitmqServicePort = 5672;
+const rabbitmqUsername    = process.env.RABBITMQ_USERNAME!;
+const rabbitmqPassword    = process.env.RABBITMQ_PASSWORD!;
+const rabbitmqService     = process.env.RABBITMQ_SERVICE!;
+const exchange            = process.env.RABBITMQ_EXCHANGE!;
+const queue               = process.env.RABBITMQ_QUEUE!;
+const routingKey          = 'ticket.created';              
 
 router.post('/api/tickets', requireAuth, [
     body('title')
@@ -35,7 +35,7 @@ router.post('/api/tickets', requireAuth, [
         await ticket.save();
 
         // Establish connection with RabbitMQ service for publishing Events. Keep the connection open.
-        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService,rabbitmqServicePort);
+        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService);
         if (connection) {
             console.log('Successfully established connection to RabbitMQ Service');
             // Publish an event for Ticket Creation

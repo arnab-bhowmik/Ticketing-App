@@ -11,12 +11,12 @@ const router = express.Router();
 
 const EXPIRATION_WINDOW_SECS = 5*60;
 
-const exchange            = 'rabbitmq-exchange';
-const routingKey          = 'order.created';
-const rabbitmqUsername    = 'example';
-const rabbitmqPassword    = 'whyareyoulookinghere';
-const rabbitmqService     = 'rabbitmq-cluster';
-const rabbitmqServicePort = 5672;
+const rabbitmqUsername    = process.env.RABBITMQ_USERNAME!;
+const rabbitmqPassword    = process.env.RABBITMQ_PASSWORD!;
+const rabbitmqService     = process.env.RABBITMQ_SERVICE!;
+const exchange            = process.env.RABBITMQ_EXCHANGE!;
+const queue               = process.env.RABBITMQ_QUEUE!;
+const routingKey          = 'order.created';               
 
 router.post('/api/orders', requireAuth, [
     body('ticketId')
@@ -51,7 +51,7 @@ router.post('/api/orders', requireAuth, [
         await order.save();
 
         // Establish connection with RabbitMQ service for publishing Events. Keep the connection open.
-        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService,rabbitmqServicePort);
+        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService);
         if (connection) {
             console.log('Successfully established connection to RabbitMQ Service');
             // Publish an event for Order Creation
