@@ -5,7 +5,8 @@ metadata:
   namespace: ticketing-app
 spec:
   vhost: "/"            # name of a vhost; required
-  user: "rabbitmq-user" # name of RabbitMQ user
+  userReference:
+    name: "rabbitmq-user"
   permissions:
     write: ".*"
     configure: ".*"
@@ -20,9 +21,10 @@ metadata:
   namespace: ticketing-app
 spec:
   vhost: "/"            # name of a vhost; required
-  user: "rabbitmq-user" # name of RabbitMQ user
+  userReference:
+    name: "rabbitmq-user"
   permissions:
-    exchange: rabbitmq-exchange
+    exchange: ticketing-app-exchange
     write: ".*"
     read: ".*"
   rabbitmqClusterReference:

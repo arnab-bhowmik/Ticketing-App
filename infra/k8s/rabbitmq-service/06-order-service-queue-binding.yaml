@@ -4,7 +4,7 @@ metadata:
   name: order-service-queue-binding
   namespace: ticketing-app
 spec:
-  source: rabbitmq-exchange         # an existing exchange
+  source: ticketing-app-exchange    # an existing exchange
   destination: order-service-queue  # an existing queue
   destinationType: queue            # can be 'queue' or 'exchange'
   routingKey: "ticket.#"
