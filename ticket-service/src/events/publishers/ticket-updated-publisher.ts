@@ -2,4 +2,5 @@ import { Subjects, Publisher, TicketUpdatedEvent } from "@ticketing_org/custom-m
 
 export class TicketUpdatedPublisher extends Publisher<TicketUpdatedEvent> {
   readonly subject = Subjects.TicketUpdated;
+  routingKey: Subjects.TicketCreated = Subjects.TicketCreated;
 }

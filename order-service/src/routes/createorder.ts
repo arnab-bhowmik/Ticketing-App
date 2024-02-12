@@ -15,8 +15,7 @@ const rabbitmqUsername    = process.env.RABBITMQ_USERNAME!;
 const rabbitmqPassword    = process.env.RABBITMQ_PASSWORD!;
 const rabbitmqService     = process.env.RABBITMQ_SERVICE!;
 const exchange            = process.env.RABBITMQ_EXCHANGE!;
-const queue               = process.env.RABBITMQ_QUEUE!;
-const routingKey          = 'order.created';               
+const queue               = process.env.RABBITMQ_QUEUE!;              
 
 router.post('/api/orders', requireAuth, [
     body('ticketId')
@@ -55,7 +54,7 @@ router.post('/api/orders', requireAuth, [
         if (connection) {
             console.log('Successfully established connection to RabbitMQ Service');
             // Publish an event for Order Creation
-            await new OrderCreatedPublisher(connection!,exchange,routingKey).publish({
+            await new OrderCreatedPublisher(connection!,exchange).publish({
                 id:         order.id,
                 userId:     order.userId,
                 status:     order.status,

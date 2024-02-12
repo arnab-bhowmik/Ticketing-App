@@ -11,8 +11,7 @@ const rabbitmqUsername    = process.env.RABBITMQ_USERNAME!;
 const rabbitmqPassword    = process.env.RABBITMQ_PASSWORD!;
 const rabbitmqService     = process.env.RABBITMQ_SERVICE!;
 const exchange            = process.env.RABBITMQ_EXCHANGE!;
-const queue               = process.env.RABBITMQ_QUEUE!;
-const routingKey          = 'ticket.updated';             
+const queue               = process.env.RABBITMQ_QUEUE!;            
 
 router.put('/api/tickets/:id', requireAuth, [
     body('title')
@@ -46,7 +45,7 @@ router.put('/api/tickets/:id', requireAuth, [
         if (connection) {
             console.log('Successfully established connection to RabbitMQ Service');
             // Publish an event for Ticket Creation
-            await new TicketUpdatedPublisher(connection!,exchange,routingKey).publish({
+            await new TicketUpdatedPublisher(connection!,exchange).publish({
                 id: ticket.id,
                 title: ticket.title,
                 price: ticket.price,
