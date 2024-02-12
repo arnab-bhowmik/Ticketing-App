@@ -29,10 +29,11 @@ router.post('/api/tickets', requireAuth, [
 
         // Publish an event for Ticket Creation
         await new TicketCreatedPublisher(connection!,exchange).publish({
-            id:     ticket.id,
-            title:  ticket.title,
-            price:  ticket.price,
-            userId: ticket.userId
+            id:      ticket.id,
+            version: ticket.version,
+            title:   ticket.title,
+            price:   ticket.price,
+            userId:  ticket.userId
         });
 
         res.status(201).send(ticket);

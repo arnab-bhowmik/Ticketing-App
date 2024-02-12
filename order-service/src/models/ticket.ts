@@ -1,16 +1,19 @@
 import mongoose from "mongoose";
+import { updateIfCurrentPlugin } from 'mongoose-update-if-current';
 import { Order, OrderStatus } from '../models/order';
 
 // Interface to define the properties the Ticket Schema has
 interface TicketAttribute {
+    id: string,
     title: string,
     price: number
 }
 
 // Interface to define the properties the Ticket Document has
 export interface TicketDoc extends mongoose.Document {
-    title: string
-    price: number
+    title: string,
+    price: number,
+    version: number,
     isReserved(): Promise<boolean>
 }
 
@@ -39,8 +42,18 @@ const ticketSchema = new mongoose.Schema({
     }
 });
 
+// Let Mongoose use 'version' as the version key instead of the default '__v'
+ticketSchema.set('versionKey','version');
+// Use the imported mongoose npm library 
+ticketSchema.plugin(updateIfCurrentPlugin);
+
 ticketSchema.statics.build = (attribute: TicketAttribute) => {
-    return new Ticket(attribute);
+    // return new Ticket(attribute);
+    return new Ticket({
+        _id: attribute.id,
+        title: attribute.title,
+        price: attribute.price
+    });
 }
 
 // Define the logic for marking a ticket as reserved

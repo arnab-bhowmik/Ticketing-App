@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { updateIfCurrentPlugin } from 'mongoose-update-if-current'; 
 
 // Interface to define the properties the Ticket Schema has
 interface TicketAttribute {
@@ -9,9 +10,10 @@ interface TicketAttribute {
 
 // Interface to define the properties the Ticket Document has
 interface TicketDoc extends mongoose.Document {
-    title: string,
+    title: string,  
     price: number,
-    userId: string
+    userId: string,
+    version: number
 }
 
 // Interface to define the properties the Ticket Model has
@@ -41,6 +43,11 @@ const ticketSchema = new mongoose.Schema({
         }
     }
 });
+
+// Let Mongoose use 'version' as the version key instead of the default '__v'
+ticketSchema.set('versionKey','version');
+// Use the imported mongoose npm library 
+ticketSchema.plugin(updateIfCurrentPlugin);
 
 ticketSchema.statics.build = (attribute: TicketAttribute) => {
     return new Ticket(attribute);

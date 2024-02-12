@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { updateIfCurrentPlugin } from 'mongoose-update-if-current';
 import { OrderStatus } from "@ticketing_org/custom-modules";
 import { TicketDoc } from "./ticket";
 
@@ -15,7 +16,8 @@ interface OrderDoc extends mongoose.Document {
     userId: string,
     status: OrderStatus,
     expiresAt: Date,
-    ticket: TicketDoc
+    ticket: TicketDoc,
+    version: number
 }
 
 // Interface to define the properties the Order Model has
@@ -51,6 +53,11 @@ const orderSchema = new mongoose.Schema({
         }
     }
 });
+
+// Let Mongoose use 'version' as the version key instead of the default '__v'
+orderSchema.set('versionKey','version');
+// Use the imported mongoose npm library 
+orderSchema.plugin(updateIfCurrentPlugin);
 
 orderSchema.statics.build = (attribute: OrderAttribute) => {
     return new Order(attribute);

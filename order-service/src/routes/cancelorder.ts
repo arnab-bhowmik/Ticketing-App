@@ -22,6 +22,7 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
     // Publish an event for Order Cancellation
     await new OrderCancelledPublisher(connection!,exchange).publish({
         id:         order.id,
+        version:    order.version,
         userId:     order.userId,
         status:     order.status,
         expiresAt:  order.expiresAt.toISOString(),
