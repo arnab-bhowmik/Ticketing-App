@@ -3,12 +3,9 @@ import { body } from 'express-validator';
 import { requireAuth, validateRequest, NotFoundError, NotAuthorizedError } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
 import { TicketUpdatedPublisher } from '../events/publishers/ticket-updated-publisher';
-import { connection } from '../index';
+import { connection, exchange } from '../index';
 
-const router = express.Router();
-
-const exchange            = process.env.RABBITMQ_EXCHANGE!;
-const queue               = process.env.RABBITMQ_QUEUE!;            
+const router = express.Router();            
 
 router.put('/api/tickets/:id', requireAuth, [
     body('title')

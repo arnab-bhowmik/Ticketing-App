@@ -5,7 +5,9 @@ import { openRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
 import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
 
+let rabbitmqUsername: string, rabbitmqPassword: string, rabbitmqService: string;
 let connection: amqp.Connection;
+let exchange: string, queue: string;
 
 const startUp = async () => {
     if (!process.env.JWT_KEY) {
@@ -39,11 +41,11 @@ const startUp = async () => {
         throw new Error('RABBITMQ_QUEUE must be defined!');
     }
 
-    const rabbitmqUsername = process.env.RABBITMQ_USERNAME;
-    const rabbitmqPassword = process.env.RABBITMQ_PASSWORD;
-    const rabbitmqService  = process.env.RABBITMQ_SERVICE;
-    const exchange         = process.env.RABBITMQ_EXCHANGE;
-    const queue            = process.env.RABBITMQ_QUEUE;
+    rabbitmqUsername = process.env.RABBITMQ_USERNAME;
+    rabbitmqPassword = process.env.RABBITMQ_PASSWORD;
+    rabbitmqService  = process.env.RABBITMQ_SERVICE;
+    exchange         = process.env.RABBITMQ_EXCHANGE;
+    queue            = process.env.RABBITMQ_QUEUE;
 
     app.listen(3000, () => {
         console.log('Listening on port 3000!!');
@@ -59,4 +61,4 @@ const startUp = async () => {
 }
 
 startUp();
-export { connection };
+export { connection, exchange, queue };

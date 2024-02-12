@@ -5,13 +5,11 @@ import { requireAuth, validateRequest, NotFoundError, BadRequestError } from '@t
 import { Ticket } from '../models/ticket';
 import { Order, OrderStatus } from '../models/order';
 import { OrderCreatedPublisher } from '../events/publishers/order-created-publisher';
-import { connection } from '../index';
+import { connection, exchange } from '../index';
 
 const router = express.Router();
 
-const EXPIRATION_WINDOW_SECS = 5*60;
-const exchange            = process.env.RABBITMQ_EXCHANGE!;
-const queue               = process.env.RABBITMQ_QUEUE!;              
+const EXPIRATION_WINDOW_SECS = 5*60;             
 
 router.post('/api/orders', requireAuth, [
     body('ticketId')
