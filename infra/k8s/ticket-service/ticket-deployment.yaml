@@ -38,7 +38,7 @@ spec:
             - name: RABBITMQ_SERVICE
               value: 'rabbitmq-cluster'
             - name: RABBITMQ_EXCHANGE
-              value: 'rabbitmq-exchange'
+              value: 'ticketing-app-exchange'
             - name: RABBITMQ_QUEUE
               value: 'ticket-service-queue'
 ---
