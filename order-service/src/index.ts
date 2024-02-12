@@ -1,8 +1,11 @@
+import amqp from 'amqplib';
 import mongoose from "mongoose";
 import { app } from "./app";
-import { openRabbitMQConnection, closeRabbitMQConnection } from "@ticketing_org/custom-modules";
+import { openRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
 import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
+
+let connection: amqp.Connection;
 
 const startUp = async () => {
     if (!process.env.JWT_KEY) {
@@ -36,22 +39,19 @@ const startUp = async () => {
         throw new Error('RABBITMQ_QUEUE must be defined!');
     }
 
-    const rabbitmqUsername    = process.env.RABBITMQ_USERNAME;
-    const rabbitmqPassword    = process.env.RABBITMQ_PASSWORD;
-    const rabbitmqService     = process.env.RABBITMQ_SERVICE;
-    const exchange            = process.env.RABBITMQ_EXCHANGE;
-    const queue               = process.env.RABBITMQ_QUEUE;
-
-    // Establish connection with RabbitMQ service for consuming Events. Keep the connection open.
-    const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService);
-    if (connection) {
-        console.log('Successfully established connection to RabbitMQ Service');
-    }
+    const rabbitmqUsername = process.env.RABBITMQ_USERNAME;
+    const rabbitmqPassword = process.env.RABBITMQ_PASSWORD;
+    const rabbitmqService  = process.env.RABBITMQ_SERVICE;
+    const exchange         = process.env.RABBITMQ_EXCHANGE;
+    const queue            = process.env.RABBITMQ_QUEUE;
 
     app.listen(3000, () => {
         console.log('Listening on port 3000!!');
     });
 
+    // Establish connection with RabbitMQ service for consuming Events. Keep the connection open.
+    connection = (await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService))!;
+    
     // Listen for Ticket Creation events
     await new TicketCreatedListener(connection!, queue).listen();
     // Listen for Ticket Update events
@@ -59,3 +59,4 @@ const startUp = async () => {
 }
 
 startUp();
+export { connection };

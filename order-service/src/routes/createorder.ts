@@ -2,18 +2,14 @@ import mongoose from 'mongoose';
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { requireAuth, validateRequest, NotFoundError, BadRequestError } from '@ticketing_org/custom-modules';
-import { openRabbitMQConnection, closeRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { Ticket } from '../models/ticket';
 import { Order, OrderStatus } from '../models/order';
 import { OrderCreatedPublisher } from '../events/publishers/order-created-publisher';
+import { connection } from '../index';
 
 const router = express.Router();
 
 const EXPIRATION_WINDOW_SECS = 5*60;
-
-const rabbitmqUsername    = process.env.RABBITMQ_USERNAME!;
-const rabbitmqPassword    = process.env.RABBITMQ_PASSWORD!;
-const rabbitmqService     = process.env.RABBITMQ_SERVICE!;
 const exchange            = process.env.RABBITMQ_EXCHANGE!;
 const queue               = process.env.RABBITMQ_QUEUE!;              
 
@@ -49,23 +45,17 @@ router.post('/api/orders', requireAuth, [
         })
         await order.save();
 
-        // Establish connection with RabbitMQ service for publishing Events. Keep the connection open.
-        const connection = await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService);
-        if (connection) {
-            console.log('Successfully established connection to RabbitMQ Service');
-            // Publish an event for Order Creation
-            await new OrderCreatedPublisher(connection!,exchange).publish({
-                id:         order.id,
-                userId:     order.userId,
-                status:     order.status,
-                expiresAt:  order.expiresAt.toISOString(),
-                ticket: {
-                    id:     ticket.id,
-                    price:  ticket.price
-                }
-            });
-            // await closeRabbitMQConnection(connection!); 
-        }         
+        // Publish an event for Order Creation
+        await new OrderCreatedPublisher(connection!,exchange).publish({
+            id:         order.id,
+            userId:     order.userId,
+            status:     order.status,
+            expiresAt:  order.expiresAt.toISOString(),
+            ticket: {
+                id:     ticket.id,
+                price:  ticket.price
+            }
+        });        
 
         res.status(201).send(order);
     }
