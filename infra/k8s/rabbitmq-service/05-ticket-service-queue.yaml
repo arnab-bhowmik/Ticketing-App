@@ -8,5 +8,7 @@ spec:
   type: quorum                # without providing a queue type, rabbitmq creates a classic queue
   autoDelete: false
   durable: true               # seting 'durable' to false means this queue won't survive a server restart
+  arguments:
+    x-consumer-timeout: 300000
   rabbitmqClusterReference:
     name: rabbitmq-cluster    
