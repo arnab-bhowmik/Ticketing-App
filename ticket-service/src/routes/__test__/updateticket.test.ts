@@ -1,6 +1,7 @@
 import request from "supertest";
 import { app } from "../../app";
 import mongoose from "mongoose";
+import { Ticket } from "../../models/ticket";
 
 // ------------ Test Scenarios for identifying if current user is logged in and can update tickets created by them ------------
 
@@ -53,4 +54,18 @@ it('updates the ticket provided valid inputs', async () => {
     // Validate the ticket details in Mongo Collection
     expect(ticketDetails.body.title).toEqual('Ticket_3');
     expect(ticketDetails.body.price).toEqual(250);
+});
+
+it('rejects updates to a ticket if it is already reserved', async () => {
+    const cookie = global.signin();
+    
+    // Sends a Ticket Creation Request
+    const response = await request(app).post('/api/tickets').set('Cookie', cookie).send({ title: 'Ticket_1', price: 100 });
+
+    const ticket = await Ticket.findById(response.body.id);
+    ticket!.set({ orderId: new mongoose.Types.ObjectId().toHexString() });
+    await ticket!.save();
+
+    // Try to update the ticket created above as the same user with valid details
+    await request(app).put(`/api/tickets/${response.body.id}`).set('Cookie', cookie).send({ title: 'Ticket_3', price: 250 }).expect(400);
 });

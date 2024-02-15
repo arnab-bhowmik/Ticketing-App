@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { requireAuth, validateRequest, NotFoundError, NotAuthorizedError } from '@ticketing_org/custom-modules';
+import { requireAuth, validateRequest, NotFoundError, NotAuthorizedError, BadRequestError } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
 import { TicketUpdatedPublisher } from '../events/publishers/ticket-updated-publisher';
 import { connection, exchange } from '../index';
@@ -23,6 +23,10 @@ router.put('/api/tickets/:id', requireAuth, [
         if (!ticket) {
             throw new NotFoundError();
         }
+        // Check if Ticket is already reserved
+        if (ticket.orderId) {
+            throw new BadRequestError('Cannot edit a reserved ticket');
+        }
         // Throw error if the user attempting the update isn't the Ticket Owner
         if (ticket.userId !== req.currentUser!.id) {
             throw new NotAuthorizedError();
@@ -34,7 +38,7 @@ router.put('/api/tickets/:id', requireAuth, [
         });
         await ticket.save();
 
-        // Publish an event for Ticket Creation
+        // Publish an event for Ticket Update
         await new TicketUpdatedPublisher(connection!,exchange).publish({
             id:      ticket.id,
             version: ticket.version,
