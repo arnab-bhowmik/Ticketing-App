@@ -13,6 +13,7 @@ interface TicketDoc extends mongoose.Document {
     title: string,  
     price: number,
     userId: string,
+    orderId?: string,
     version: number
 }
 
@@ -33,6 +34,9 @@ const ticketSchema = new mongoose.Schema({
     userId: {
         type: String,
         required: true
+    },
+    orderId: {
+        type: String
     }
 }, {
     // Convert Ticket schema to JSON and omit/update prperties in the response
