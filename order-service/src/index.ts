@@ -4,6 +4,7 @@ import { app } from "./app";
 import { openRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
 import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
+import { ExpirationCompleteListener } from './events/listeners/expiration-complete-listener';
 
 let rabbitmqUsername: string, rabbitmqPassword: string, rabbitmqService: string;
 let connection: amqp.Connection;
@@ -58,6 +59,8 @@ const startUp = async () => {
     await new TicketCreatedListener(connection!, queue).listen();
     // Listen for Ticket Update events
     await new TicketUpdatedListener(connection!, queue).listen();
+    // Listen for Expiration Complete events
+    await new ExpirationCompleteListener(connection!, queue).listen();
 }
 
 startUp();
