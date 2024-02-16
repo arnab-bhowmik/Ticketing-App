@@ -7,6 +7,6 @@ spec:
   source: ticketing-app-exchange        # an existing exchange
   destination: expiration-service-queue # an existing queue
   destinationType: queue                # can be 'queue' or 'exchange'
-  routingKey: "order.#"
+  routingKey: "order.created"
   rabbitmqClusterReference:
     name: rabbitmq-cluster
