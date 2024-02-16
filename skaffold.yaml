@@ -18,6 +18,7 @@ manifests:
   - ./infra/k8s/auth-service/*
   - ./infra/k8s/ticket-service/*
   - ./infra/k8s/order-service/*
+  - ./infra/k8s/expiration-service/*
   - ./infra/k8s/ingress/*
   # - ./infra/k8s/rabbitmq-service/*
 profiles:
@@ -58,6 +59,14 @@ profiles:
           manual:
             - src: 'src/**/*.ts'
               dest: .
+      - image: ticketing-app-expiration-service
+        context: expiration-service
+        docker:
+          dockerfile: Dockerfile
+        sync:
+          manual:
+            - src: 'src/**/*.ts'
+              dest: .
 - name: prod
   build:
     googleCloudBuild:
@@ -89,6 +98,14 @@ profiles:
               dest: .
       - image: gcr.io/ticketing-app-prod/ticketing-app-order-service
         context: order-service
+        docker:
+          dockerfile: Dockerfile
+        sync:
+          manual:
+            - src: 'src/**/*.ts'
+              dest: .
+      - image: gcr.io/ticketing-app-prod/ticketing-app-expiration-service
+        context: expiration-service
         docker:
           dockerfile: Dockerfile
         sync:
