@@ -4,7 +4,7 @@ import { json } from "body-parser";
 import cookieSession from "cookie-session";
 
 import { errorHandler, NotFoundError, currentUser } from "@ticketing_org/custom-modules";
-// import { createTicketRouter } from "./routes/createticket";
+import { createPaymentRouter } from "./routes/createPayment";
 
 const app = express();
 app.set('trust proxy', true);
@@ -15,7 +15,7 @@ app.use(cookieSession({
 }));
 app.use(currentUser);
 
-// app.use(createTicketRouter);
+app.use(createPaymentRouter);
 
 app.get('*', async () => {
     throw new NotFoundError();
