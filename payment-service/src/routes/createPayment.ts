@@ -1,7 +1,9 @@
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { requireAuth, validateRequest, BadRequestError, NotFoundError, NotAuthorizedError, OrderStatus } from '@ticketing_org/custom-modules';
+import { stripe } from '../stripe';
 import { Order } from '../models/order';
+import { Payment } from '../models/payment';
 import { PaymentCreatedPublisher } from '../events/publishers/payment-created-publisher';
 import { connection, exchange } from '../index';
 
@@ -33,14 +35,27 @@ router.post('/api/payments', requireAuth, [
             throw new BadRequestError('Cannot pay for an Cancelled Order');
         }
 
-        // // Publish an event for Ticket Creation
-        // await new TicketCreatedPublisher(connection!,exchange).publish({
-        //     id:      ticket.id,
-        //     version: ticket.version,
-        //     title:   ticket.title,
-        //     price:   ticket.price,
-        //     userId:  ticket.userId
-        // });
+        // Invoke Stripe API for the Payment. Note:- This is not supported in India!
+        const charge = await stripe.charges.create({
+            currency: 'usd',
+            amount: order.price*100,
+            source: token
+        });
+        // Build the Payment record
+        const payment = Payment.build({
+            stripeId: charge.id,
+            orderId,
+            version: 0
+        });
+        await payment.save();
+
+        // Publish an event for Payment Creation
+        await new PaymentCreatedPublisher(connection!,exchange).publish({
+            id:         payment.id,
+            stripeId:   payment.stripeId,
+            orderId:    payment.orderId,
+            version:    payment.version
+        });
 
         res.status(201).send({success: true});
     }   
