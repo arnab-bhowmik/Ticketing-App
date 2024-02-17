@@ -32,6 +32,13 @@ spec:
                 name: order-service
                 port:
                   number: 3000
+          - path: /api/payments/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 3000
           - path: /?(.*)
             pathType: ImplementationSpecific
             backend:

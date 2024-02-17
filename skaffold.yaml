@@ -13,14 +13,15 @@ metadata:
 manifests:
   rawYaml:
   - ./infra/k8s/namespace/*
+  - ./infra/k8s/rabbitmq-service/*
   - ./infra/k8s/client/*
   - ./infra/k8s/database/*
   - ./infra/k8s/auth-service/*
   - ./infra/k8s/ticket-service/*
   - ./infra/k8s/order-service/*
   - ./infra/k8s/expiration-service/*
+  - ./infra/k8s/payment-service/*
   - ./infra/k8s/ingress/*
-  # - ./infra/k8s/rabbitmq-service/*
 profiles:
 - name: dev
   build:
@@ -67,6 +68,14 @@ profiles:
           manual:
             - src: 'src/**/*.ts'
               dest: .
+      - image: ticketing-app-payment-service
+        context: payment-service
+        docker:
+          dockerfile: Dockerfile
+        sync:
+          manual:
+            - src: 'src/**/*.ts'
+              dest: .
 - name: prod
   build:
     googleCloudBuild:
@@ -106,6 +115,14 @@ profiles:
               dest: .
       - image: gcr.io/ticketing-app-prod/ticketing-app-expiration-service
         context: expiration-service
+        docker:
+          dockerfile: Dockerfile
+        sync:
+          manual:
+            - src: 'src/**/*.ts'
+              dest: .
+      - image: gcr.io/ticketing-app-prod/ticketing-app-payment-service
+        context: payment-service
         docker:
           dockerfile: Dockerfile
         sync:
