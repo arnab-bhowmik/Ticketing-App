@@ -5,6 +5,7 @@ import { openRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
 import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
 import { ExpirationCompleteListener } from './events/listeners/expiration-complete-listener';
+import { PaymentCreatedListener } from './events/listeners/payment-created-listener';
 
 let rabbitmqUsername: string, rabbitmqPassword: string, rabbitmqService: string;
 let connection: amqp.Connection;
@@ -61,6 +62,8 @@ const startUp = async () => {
     await new TicketUpdatedListener(connection!, queue).listen();
     // Listen for Expiration Complete events
     await new ExpirationCompleteListener(connection!, queue).listen();
+    // Listen for Payment Creation events
+    await new PaymentCreatedListener(connection!, queue).listen();
 }
 
 startUp();

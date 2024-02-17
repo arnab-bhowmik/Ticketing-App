@@ -16,22 +16,28 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
             if (!order) {
                 throw new Error('Order not found');
             }
-            // Update the Order Status to Cancelled
-            order.set({ status: OrderStatus.Cancelled });
-            await order.save();
+            
+            // Check if the Order is already marked as complete prior its expiry. If YES, don't update the status from 'Complete' to 'Cancelled'
+            if (order.status === OrderStatus.Complete) {
+                console.log('Order is already Complete, hence not updating status to Cancelled');
+            } else {
+                // Update the Order Status to Cancelled
+                order.set({ status: OrderStatus.Cancelled });
+                await order.save();
 
-            // Publish an event for Order Cancellation
-            await new OrderCancelledPublisher(connection!,exchange).publish({
-                id:         order.id,
-                version:    order.version,
-                userId:     order.userId,
-                status:     order.status,
-                expiresAt:  order.expiresAt.toISOString(),
-                ticket: {
-                    id:     order.ticket.id,
-                    price:  order.ticket.price
-                }
-            });
+                // Publish an event for Order Cancellation
+                await new OrderCancelledPublisher(connection!,exchange).publish({
+                    id:         order.id,
+                    version:    order.version,
+                    userId:     order.userId,
+                    status:     order.status,
+                    expiresAt:  order.expiresAt.toISOString(),
+                    ticket: {
+                        id:     order.ticket.id,
+                        price:  order.ticket.price
+                    }
+                });
+            }
 
             return Boolean(true);  
         } else {
