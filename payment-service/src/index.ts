@@ -2,8 +2,8 @@ import amqp from 'amqplib';
 import mongoose from "mongoose";
 import { app } from "./app";
 import { openRabbitMQConnection } from "@ticketing_org/custom-modules";
-// import { OrderCreatedListener } from './events/listeners/order-created-listener';
-// import { OrderCancelledListener } from './events/listeners/order-cancelled-listener';
+import { OrderCreatedListener } from './events/listeners/order-created-listener';
+import { OrderCancelledListener } from './events/listeners/order-cancelled-listener';
 
 let rabbitmqUsername: string, rabbitmqPassword: string, rabbitmqService: string;
 let connection: amqp.Connection;
@@ -54,10 +54,10 @@ const startUp = async () => {
     // Establish connection with RabbitMQ service for consuming Events. Keep the connection open.
     connection = (await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService))!;
     
-    // // Listen for Order Creation events
-    // await new OrderCreatedListener(connection!, queue).listen();
-    // // Listen for Order Cancellation events
-    // await new OrderCancelledListener(connection!, queue).listen();
+    // Listen for Order Creation events
+    await new OrderCreatedListener(connection!, queue).listen();
+    // Listen for Order Cancellation events
+    await new OrderCancelledListener(connection!, queue).listen();
 }
 
 startUp();
