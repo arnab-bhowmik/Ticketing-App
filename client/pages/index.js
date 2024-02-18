@@ -1,14 +1,34 @@
-// import buildClient from "../api/build-client";
-
-const Landing = ({ currentUser }) => {
-    return currentUser ? <h1>Signed In Successfully!</h1> : <h1>User not Signed In!</h1>
+const Landing = ({ currentUser, tickets }) => {
+    // return currentUser ? <h1>Signed In Successfully!</h1> : <h1>User not Signed In!</h1>
+    const ticketList = tickets.map((ticket) => {
+        return (
+          <tr key={ticket.id}>
+            <td>{ticket.title}</td>
+            <td>{ticket.price}</td>
+          </tr>
+        );
+      });
+    
+    return (
+    <div>
+        <h1>Tickets</h1>
+        <table className="table">
+        <thead>
+            <tr>
+            <th>Title</th>
+            <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>{ticketList}</tbody>
+        </table>
+    </div>
+    );
 };
 
-// Method allows to fetch data that needs to be shown on the UI Component. Importing buildClient lets us create an Axios instance.
+// Method allows to fetch data that needs to be shown on the UI Component. Importing buildClient as client lets us create an Axios instance.
 Landing.getInitialProps = async (context, client, currentUser) => {
-    // const { data } = await buildClient(context).get('/api/users/currentuser');
-    // return data;
-    return {};
+    const { data } = await client.get('/api/tickets');
+    return { tickets: data };
 };
    
 export default Landing;
