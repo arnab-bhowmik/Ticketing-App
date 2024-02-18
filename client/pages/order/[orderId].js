@@ -11,7 +11,7 @@ const showOrder = ({ order, currentUser }) => {
         url: '/api/payments',
         method: 'post',
         body: { orderId: order.id  },                   // The body also contains the token param which is incorporated by doRequest() function under the hood
-        onSuccess: (payment) => console.log(payment)
+        onSuccess: (payment) => Router.push('/orders')
     });
 
     useEffect(() => {
