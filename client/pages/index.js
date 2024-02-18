@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const Landing = ({ currentUser, tickets }) => {
     // return currentUser ? <h1>Signed In Successfully!</h1> : <h1>User not Signed In!</h1>
     const ticketList = tickets.map((ticket) => {
@@ -5,6 +7,11 @@ const Landing = ({ currentUser, tickets }) => {
           <tr key={ticket.id}>
             <td>{ticket.title}</td>
             <td>{ticket.price}</td>
+            <td>
+              <Link href="/ticket/[ticketId]" as={`/ticket/${ticket.id}`}>
+                View
+              </Link>
+            </td>
           </tr>
         );
       });
@@ -17,6 +24,7 @@ const Landing = ({ currentUser, tickets }) => {
             <tr>
             <th>Title</th>
             <th>Price</th>
+            <th>Link</th>
             </tr>
         </thead>
         <tbody>{ticketList}</tbody>
