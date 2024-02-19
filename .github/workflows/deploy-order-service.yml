@@ -1,23 +1,23 @@
-name: deploy-auth-service
+name: deploy-order-service
 
 on: 
   push:
     branches:
       - main
     paths:
-      - 'auth-service/**'
+      - 'order-service/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cd auth-service && docker build -t ticketing-app-auth-service .
+      - run: cd order-service && docker build -t ticketing-app-order-service .
       - run: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
         env:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-      - run: docker push ticketing-app-auth-service
+      - run: docker push ticketing-app-order-service
       - uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITAL_OCEAN_ACCESS_TOKEN }}
