@@ -16,7 +16,7 @@ spec:
       containers:
         - name: order
           image: ticketing-app-order-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
             - name: MONGO_URI
               value: 'mongodb://order-mongo-service:27017/orders'

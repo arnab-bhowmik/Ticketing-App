@@ -16,7 +16,7 @@ spec:
       containers:
         - name: ticket
           image: ticketing-app-ticket-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
             - name: MONGO_URI
               value: 'mongodb://ticket-mongo-service:27017/tickets'

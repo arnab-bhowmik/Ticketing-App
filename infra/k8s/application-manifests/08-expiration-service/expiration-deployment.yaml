@@ -16,7 +16,7 @@ spec:
       containers:
         - name: expiration
           image: ticketing-app-expiration-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
             - name: RABBITMQ_USERNAME
               valueFrom:

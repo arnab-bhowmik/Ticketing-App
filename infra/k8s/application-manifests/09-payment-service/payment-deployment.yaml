@@ -16,7 +16,7 @@ spec:
       containers:
         - name: payment
           image: ticketing-app-payment-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
             - name: MONGO_URI
               value: 'mongodb://payment-mongo-service:27017/payments'
