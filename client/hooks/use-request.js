@@ -4,6 +4,7 @@ import { useState } from "react";
 export default ({ url, method, body, onSuccess }) => {
     const [errors, setErrors] = useState(null);
 
+    // doRequest method to take an optional props value and append it to the body of the axios request
     const doRequest = async (props = {}) => {
         try {
             setErrors(null);

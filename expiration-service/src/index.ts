@@ -7,7 +7,7 @@ let connection: amqp.Connection;
 let exchange: string, queue: string;
 
 const startUp = async () => {
-
+    console.log('Starting Up.....');
     if (!process.env.RABBITMQ_USERNAME) {
         throw new Error('RABBITMQ_USERNAME must be defined!');
     }

@@ -10,6 +10,7 @@ let connection: amqp.Connection;
 let exchange: string, queue: string;
 
 const startUp = async () => {
+    console.log('Starting Up.....');
     if (!process.env.JWT_KEY) {
         throw new Error('JWT_KEY must be defined!');
     }
