@@ -8,5 +8,6 @@ spec:
   type: topic                   # default to 'direct' if not provided
   autoDelete: false
   durable: true
+  vhost: ticketing-app-vhost 
   rabbitmqClusterReference:
     name: rabbitmq-cluster 

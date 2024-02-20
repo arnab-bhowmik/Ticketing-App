@@ -4,7 +4,7 @@ metadata:
   name: rabbitmq-user-permission
   namespace: ticketing-app
 spec:
-  vhost: "/"            # name of a vhost; required
+  vhost: ticketing-app-vhost            # name of a vhost; required
   userReference:
     name: "rabbitmq-user"
   permissions:
@@ -20,7 +20,7 @@ metadata:
   name: rabbitmq-user-topic-permission
   namespace: ticketing-app
 spec:
-  vhost: "/"            # name of a vhost; required
+  vhost: ticketing-app-vhost            # name of a vhost; required
   userReference:
     name: "rabbitmq-user"
   permissions:

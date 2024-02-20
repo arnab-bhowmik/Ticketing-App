@@ -8,5 +8,6 @@ spec:
   destination: ticket-service-queue # an existing queue
   destinationType: queue            # can be 'queue' or 'exchange'
   routingKey: "order.#"
+  vhost: ticketing-app-vhost 
   rabbitmqClusterReference:
     name: rabbitmq-cluster
