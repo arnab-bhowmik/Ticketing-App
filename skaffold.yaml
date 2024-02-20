@@ -12,16 +12,7 @@ metadata:
     name: ticketing-app
 manifests:
   rawYaml:
-  - ./infra/k8s/01-namespace/*
-  - ./infra/k8s/02-rabbitmq-service/*
-  - ./infra/k8s/03-client/*
-  - ./infra/k8s/04-database/*
-  - ./infra/k8s/05-auth-service/*
-  - ./infra/k8s/06-ticket-service/*
-  - ./infra/k8s/07-order-service/*
-  - ./infra/k8s/08-expiration-service/*
-  - ./infra/k8s/09-payment-service/*
-  - ./infra/k8s/10-ingress/*
+  - ./infra/k8s/application-manifests/*
 profiles:
 - name: dev
   build:
