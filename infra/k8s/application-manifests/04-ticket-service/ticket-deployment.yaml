@@ -37,6 +37,8 @@ spec:
                   key: password
             - name: RABBITMQ_SERVICE
               value: 'rabbitmq-cluster'
+            - name: RABBITMQ_VHOST
+              value: 'ticketing-app-vhost'
             - name: RABBITMQ_EXCHANGE
               value: 'ticketing-app-exchange'
             - name: RABBITMQ_QUEUE

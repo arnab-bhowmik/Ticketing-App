@@ -5,7 +5,7 @@ import { openRabbitMQConnection } from "@ticketing_org/custom-modules";
 import { OrderCreatedListener } from './events/listeners/order-created-listener';
 import { OrderCancelledListener } from './events/listeners/order-cancelled-listener';
 
-let rabbitmqUsername: string, rabbitmqPassword: string, rabbitmqService: string;
+let rabbitmqUsername: string, rabbitmqPassword: string, rabbitmqService: string, rabbitmqVhost: string;
 let connection: amqp.Connection;
 let exchange: string, queue: string;
 
@@ -35,6 +35,9 @@ const startUp = async () => {
     if (!process.env.RABBITMQ_SERVICE) {
         throw new Error('RABBITMQ_SERVICE must be defined!');
     }
+    if (!process.env.RABBITMQ_VHOST) {
+        throw new Error('RABBITMQ_VHOST must be defined!');
+    }
     if (!process.env.RABBITMQ_EXCHANGE) {
         throw new Error('RABBITMQ_EXCHANGE must be defined!');
     }
@@ -45,6 +48,7 @@ const startUp = async () => {
     rabbitmqUsername = process.env.RABBITMQ_USERNAME;
     rabbitmqPassword = process.env.RABBITMQ_PASSWORD;
     rabbitmqService  = process.env.RABBITMQ_SERVICE;
+    rabbitmqVhost    = process.env.RABBITMQ_VHOST;
     exchange         = process.env.RABBITMQ_EXCHANGE;
     queue            = process.env.RABBITMQ_QUEUE;
 
@@ -53,7 +57,7 @@ const startUp = async () => {
     });
 
     // Establish connection with RabbitMQ service for consuming Events. Keep the connection open.
-    connection = (await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService))!;
+    connection = (await openRabbitMQConnection(rabbitmqUsername,rabbitmqPassword,rabbitmqService,rabbitmqVhost))!;
     
     // Listen for Order Creation events
     await new OrderCreatedListener(connection!, queue).listen();
