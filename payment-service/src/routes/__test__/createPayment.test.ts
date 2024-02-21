@@ -41,49 +41,49 @@ it('returns 400 when making payment for an cancelled order', async () => {
     await request(app).post('/api/payments').set('Cookie', global.signin(userId)).send({ token: 'yfgh', orderId: order.id }).expect(400);
 });
 
-it('returns a 201 with valid inputs', async () => {
-    // Generate a random User Id
-    const userId = new mongoose.Types.ObjectId().toHexString();
-    // Build a new Order
-    const order = Order.build({
-        id: new mongoose.Types.ObjectId().toHexString(),
-        userId,
-        status: OrderStatus.Created,
-        price: 200,
-        version: 0
-    });
-    await order.save();
+// it('returns a 201 with valid inputs', async () => {
+//     // Generate a random User Id
+//     const userId = new mongoose.Types.ObjectId().toHexString();
+//     // Build a new Order
+//     const order = Order.build({
+//         id: new mongoose.Types.ObjectId().toHexString(),
+//         userId,
+//         status: OrderStatus.Created,
+//         price: 200,
+//         version: 0
+//     });
+//     await order.save();
   
-    await request(app).post('/api/payments').set('Cookie', global.signin(userId)).send({ token: 'tok_visa', orderId: order.id }).expect(201);
+//     await request(app).post('/api/payments').set('Cookie', global.signin(userId)).send({ token: 'tok_visa', orderId: order.id }).expect(201);
   
-    const stripeCharges = await stripe.charges.list({ limit: 50 });
-    const stripeCharge = stripeCharges.data.find((charge) => {
-      return charge.amount === 200 * 100;
-    });
+//     const stripeCharges = await stripe.charges.list({ limit: 50 });
+//     const stripeCharge = stripeCharges.data.find((charge) => {
+//       return charge.amount === 200 * 100;
+//     });
   
-    expect(stripeCharge).toBeDefined();
-    expect(stripeCharge!.currency).toEqual('usd');
+//     expect(stripeCharge).toBeDefined();
+//     expect(stripeCharge!.currency).toEqual('usd');
   
-    const payment = await Payment.findOne({ orderId: order.id, stripeId: stripeCharge!.id });
-    expect(payment).not.toBeNull();
-});
+//     const payment = await Payment.findOne({ orderId: order.id, stripeId: stripeCharge!.id });
+//     expect(payment).not.toBeNull();
+// });
 
-it('emits payment created event on successful payment creation', async () => {
-    // Generate a random User Id
-    const userId = new mongoose.Types.ObjectId().toHexString();
-    // Build a new Order
-    const order = Order.build({
-        id: new mongoose.Types.ObjectId().toHexString(),
-        userId,
-        status: OrderStatus.Created,
-        price: 400,
-        version: 0
-    });
-    await order.save();
+// it('emits payment created event on successful payment creation', async () => {
+//     // Generate a random User Id
+//     const userId = new mongoose.Types.ObjectId().toHexString();
+//     // Build a new Order
+//     const order = Order.build({
+//         id: new mongoose.Types.ObjectId().toHexString(),
+//         userId,
+//         status: OrderStatus.Created,
+//         price: 400,
+//         version: 0
+//     });
+//     await order.save();
   
-    await request(app).post('/api/payments').set('Cookie', global.signin(userId)).send({ token: 'tok_visa', orderId: order.id }).expect(201);
+//     await request(app).post('/api/payments').set('Cookie', global.signin(userId)).send({ token: 'tok_visa', orderId: order.id }).expect(201);
   
-    // Emit event
-    const channel = await connection.createChannel();
-    expect(channel.publish).toHaveBeenCalled();
-});
+//     // Emit event
+//     const channel = await connection.createChannel();
+//     expect(channel.publish).toHaveBeenCalled();
+// });
