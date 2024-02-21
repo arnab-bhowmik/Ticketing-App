@@ -10,6 +10,9 @@ declare global {
     }
 }
 
+// Incorporate mock implementation of __mocks__/index.ts 
+jest.mock('../index');
+
 let mongo: any;
 process.env.JWT_KEY = 'fgfhjhukhbdxhgjhk';
 
@@ -24,7 +27,7 @@ beforeAll(async () => {
 // Execute the function before each Test within a Test Cycle
 beforeEach(async () => {
     const collections = await mongoose.connection.db.collections();
-
+    // Clear out all Mongo Collections
     for (let collection of collections) {
         await collection.deleteMany({});
     }
