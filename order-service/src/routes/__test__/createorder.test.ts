@@ -14,6 +14,7 @@ it('returns an error if the ticket does not exist', async () => {
 it('returns an error if the ticket is already reserved', async () => {
     // Create a Ticket which is yet to be associated with an Order
     const ticket = Ticket.build({
+        id: new mongoose.Types.ObjectId().toHexString(),
         title: 'concert',
         price: 200
     });
@@ -35,6 +36,7 @@ it('returns an error if the ticket is already reserved', async () => {
 it('reserves a ticket successfully', async () => {
     // Create a Ticket which is yet to be associated with an Order
     const ticket = Ticket.build({
+        id: new mongoose.Types.ObjectId().toHexString(),
         title: 'concert',
         price: 200
     });
@@ -42,5 +44,4 @@ it('reserves a ticket successfully', async () => {
 
     // Now try to associate the ticket with a new Order
     await request(app).post('/api/orders').set('Cookie', global.signin()).send({ ticketId: ticket.id }).expect(201);
-
 });
