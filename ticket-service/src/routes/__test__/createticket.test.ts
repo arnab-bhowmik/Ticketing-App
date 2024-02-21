@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
 import { Ticket } from "../../models/ticket";
+import { connection } from '../../index';
 
 // ------------ Test Scenarios for identifying if current user is logged in and can create tickets ------------
 
@@ -40,4 +42,16 @@ it('creates a ticket with valid details', async () => {
     expect(tickets.length).toEqual(1);
     expect(tickets[0].title).toEqual('Ticket_1');
     expect(tickets[0].price).toEqual(100);
+});
+
+it('emits ticket created event on successful ticket creation', async () => {
+    // Check the count of tickets in Mongo Collection, ideally should be Zero!
+    let tickets = await Ticket.find({});
+    expect(tickets.length).toEqual(0);
+    
+    await request(app).post('/api/tickets').set('Cookie', global.signin()).send({ title: 'Ticket_1', price: 100 }).expect(201);
+
+    // Emit event
+    const channel = await connection.createChannel();
+    expect(channel.publish).toHaveBeenCalled();
 });
