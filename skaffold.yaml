@@ -1,20 +1,29 @@
 apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
-    name: ingress-nginx
-manifests:
-  rawYaml:
-  - ./infra/k8s/ingress-nginx-controller.yaml
+  name: pre-requisite
+profiles:
+- name: dev
+  manifests:
+    rawYaml:
+    - ./infra/k8s/pre-requisite-manifests/*
+    - ./infra/k8s/pre-requisite-manifests-dev/*
+- name: prod
+  manifests:
+    rawYaml:
+    - ./infra/k8s/pre-requisite-manifests/*
+    - ./infra/k8s/pre-requisite-manifests-prod/*
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
-    name: ticketing-app
-manifests:
-  rawYaml:
-  - ./infra/k8s/application-manifests/*
+  name: ticketing-app
 profiles:
 - name: dev
+  manifests:
+    rawYaml:
+    - ./infra/k8s/application-manifests/*
+    - ./infra/k8s/application-manifests-dev/*
   build:
     local: 
       push: false
@@ -68,6 +77,10 @@ profiles:
             - src: 'src/**/*.ts'
               dest: .
 - name: prod
+  manifests:
+    rawYaml:
+    - ./infra/k8s/application-manifests/*
+    - ./infra/k8s/application-manifests-prod/*
   build:
     googleCloudBuild:
       projectId: ticketing-app-prod
