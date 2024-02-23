@@ -7,6 +7,7 @@ interface OrderAttribute {
     id: string,
     userId: string,
     status: OrderStatus,
+    rzpOrderId: string,
     price: number,
     version: number
 }
@@ -15,6 +16,7 @@ interface OrderAttribute {
 interface OrderDoc extends mongoose.Document {
     userId: string,
     status: OrderStatus,
+    rzpOrderId: string,
     price: number,
     version: number
 }
@@ -33,6 +35,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true,
         enum: Object.values(OrderStatus)
+    },
+    rzpOrderId: {
+        type: String,
+        required: true
     },
     price: {
         type: Number,
@@ -58,6 +64,7 @@ orderSchema.statics.build = (attribute: OrderAttribute) => {
         _id: attribute.id,
         userId: attribute.userId,
         status: attribute.status,
+        rzpOrderId: attribute.rzpOrderId,
         price: attribute.price,
         version: attribute.version
     });

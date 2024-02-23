@@ -3,14 +3,14 @@ import { updateIfCurrentPlugin } from 'mongoose-update-if-current';
 
 // Interface to define the properties the Payment Schema has
 interface PaymentAttribute {
-    rzpPaymentId: string,
+    stripeId: string,
     orderId: string,
     version: number
 }
 
 // Interface to define the properties the Payment Document has
 interface PaymentDoc extends mongoose.Document {
-    rzpPaymentId: string,
+    stripeId: string,
     orderId: string,
     version: number
 }
@@ -21,7 +21,7 @@ interface PaymentModel extends mongoose.Model<PaymentDoc> {
 }
 
 const paymentSchema = new mongoose.Schema({
-    rzpPaymentId: {
+    stripeId: {
         type: String,
         required: true
     },
