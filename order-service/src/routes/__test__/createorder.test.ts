@@ -5,6 +5,9 @@ import { Ticket } from "../../models/ticket";
 import { Order, OrderStatus } from "../../models/order";
 import { connection } from '../../index';
 
+// The following Order exists in the Razorpay Test Environment
+const razorpayOrderId   = 'order_NeRdKk8eUnkUjd';
+
 // ------------ Test Scenarios for identifying if current user is logged in and can reserve tickets via orders ------------
 
 it('returns an error if the ticket does not exist', async () => {
@@ -26,6 +29,7 @@ it('returns an error if the ticket is already reserved', async () => {
         userId: 'user1@abc.com',
         status: OrderStatus.Created,
         expiresAt: new Date(),
+        rzpOrderId: razorpayOrderId, 
         ticket
     });
     await order.save();

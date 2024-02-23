@@ -15,6 +15,8 @@ jest.mock('../index');
 
 let mongo: any;
 process.env.JWT_KEY = 'fgfhjhukhbdxhgjhk';
+process.env.RAZORPAY_KEY_ID = 'rzp_test_MWnJ2Y94xOM226';
+process.env.RAZORPAY_KEY_SECRET = 'oVSdNUvpbM1iCSYdrMAcRWIl';
 
 // Execute the function at the beginning of a Test Cycle
 beforeAll(async () => {
