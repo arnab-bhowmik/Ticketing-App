@@ -8,6 +8,7 @@ interface OrderAttribute {
     userId: string,
     status: OrderStatus,
     expiresAt: Date,
+    rzpOrderId: string,
     ticket: TicketDoc
 }
 
@@ -16,6 +17,7 @@ interface OrderDoc extends mongoose.Document {
     userId: string,
     status: OrderStatus,
     expiresAt: Date,
+    rzpOrderId: string,
     ticket: TicketDoc,
     version: number
 }
@@ -38,6 +40,10 @@ const orderSchema = new mongoose.Schema({
     },
     expiresAt: {
         type: mongoose.Schema.Types.Date,
+        required: true
+    },
+    rzpOrderId: {
+        type: String,
         required: true
     },
     ticket: {

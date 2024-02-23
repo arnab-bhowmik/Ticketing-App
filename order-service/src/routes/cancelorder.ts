@@ -26,6 +26,7 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
         userId:     order.userId,
         status:     order.status,
         expiresAt:  order.expiresAt.toISOString(),
+        rzpOrderId: order.rzpOrderId,
         ticket: {
             id:     order.ticket.id,
             price:  order.ticket.price

@@ -4,6 +4,7 @@ import { body } from 'express-validator';
 import { requireAuth, validateRequest, NotFoundError, BadRequestError } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
 import { Order, OrderStatus } from '../models/order';
+import { razorpay } from '../services/razorpay';
 import { OrderCreatedPublisher } from '../events/publishers/order-created-publisher';
 import { connection, exchange } from '../index';
 
@@ -34,11 +35,25 @@ router.post('/api/orders', requireAuth, [
         // Calculate Expiration Date for the Order
         const expiration = new Date();
         expiration.setSeconds(expiration.getSeconds() + EXPIRATION_WINDOW_SECS);
+
+        // Send a request to RazorPay to create an Order internally to be linked with the Payment later
+        console.log('Attempting to create a new Razorpay Order Id');
+        const orderAmount = (ticket.price * 100);
+        const rzpOrder = await razorpay.orders.create({
+            amount: orderAmount,
+            currency: 'INR',
+            receipt: `Order_Receipt_For_Ticket_${ticket.title}`
+        });
+        if (!rzpOrder) {
+            throw new BadRequestError('Issues with Razorpay Order Id creation');
+        }
+
         // Create the Order and save it to Database
         const order = Order.build({
             userId: req.currentUser!.id,
             status: OrderStatus.Created,
             expiresAt: expiration,
+            rzpOrderId: rzpOrder.id,
             ticket: ticket
         })
         await order.save();
@@ -50,6 +65,7 @@ router.post('/api/orders', requireAuth, [
             userId:     order.userId,
             status:     order.status,
             expiresAt:  order.expiresAt.toISOString(),
+            rzpOrderId: order.rzpOrderId,
             ticket: {
                 id:     ticket.id,
                 price:  ticket.price

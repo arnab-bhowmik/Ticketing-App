@@ -32,6 +32,7 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
                     userId:     order.userId,
                     status:     order.status,
                     expiresAt:  order.expiresAt.toISOString(),
+                    rzpOrderId: order.rzpOrderId,
                     ticket: {
                         id:     order.ticket.id,
                         price:  order.ticket.price
