@@ -1,7 +1,7 @@
 import Router from 'next/router';
 import useRequest from "../../hooks/use-request";
 
-const showTicket = ({ ticket }) => {
+const showTicket = ({ currentUser, ticket }) => {
     // doRequest function invokes the useRequest() method which in turn calls the backend route
     const { doRequest, errors } = useRequest({
         url: '/api/orders',
@@ -15,12 +15,15 @@ const showTicket = ({ ticket }) => {
           <h1>Name: {ticket.title}</h1>
           <h2>Price: {ticket.price}</h2>
           {errors}
-          <button onClick={() => doRequest()} className="btn btn-primary">Purchase</button>
+          {ticket.userId !== currentUser.id
+            ? ( <button onClick={() => doRequest()} className="btn btn-primary">Purchase</button> )
+            : ( <button onClick={() => doRequest()} className="btn btn-danger">Delete</button> )
+          }
         </div>
     );
 };
 
-showTicket.getInitialProps = async (context, client) => {
+showTicket.getInitialProps = async (context, client, currentUser) => {
     // context.query returns the wildcard part of the route to be invoked i.e. ticketId
     const { ticketId } = context.query;
     const { data } = await client.get(`/api/tickets/${ticketId}`);
