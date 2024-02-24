@@ -3,6 +3,7 @@ import { Password } from "../services/password-hashing";
 
 // Interface to define the properties the User Schema has
 interface UserAttribute {
+    name: string,
     email: string,
     password: string
 }
@@ -14,11 +15,16 @@ interface UserModel extends mongoose.Model<UserDoc> {
 
 // Interface to define the properties the User Document has
 interface UserDoc extends mongoose.Document {
+    name: string,
     email: string,
     password: string
 }
 
 const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
     email: {
         type: String,
         required: true

@@ -9,26 +9,30 @@ import { validateRequest, BadRequestError } from '@ticketing_org/custom-modules'
 const router = express.Router();
 
 router.post('/api/users/signup', [
+        body('name')
+         .notEmpty()
+         .withMessage('Name must be provided'),
         body('email')
+         .notEmpty()
          .isEmail()
          .withMessage('Email must be valid'),
-         body('password')
+        body('password')
+         .notEmpty()
          .trim()
-         .isLength({ min: 4, max: 20 })
-         .withMessage('Password length must be between 4 and 20 characters')
+         .isLength({ min: 6, max: 20 })
+         .withMessage('Password length must be between 6 and 20 characters')
     ], 
     // Check for any Validation errors
     validateRequest,
     async (req: Request, res: Response) => {
-        const { email, password } = req.body;
+        const { name, email, password } = req.body;
         const existingUser = await User.findOne({ email });
-        
         // Check if any User already exists with the same email
         if (existingUser) {
             throw new BadRequestError('Email already exists!');
         } else {
             // Creat the User & save in corresponding MongoDB Collection
-            const user = User.build({ email, password });
+            const user = User.build({ name, email, password });
             await user.save();
 
             // Generate JSON Web Token
