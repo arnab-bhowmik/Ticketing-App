@@ -36,7 +36,7 @@ router.post('/api/users/signup', [
             await user.save();
 
             // Generate JSON Web Token
-            const userJWT = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_KEY!);
+            const userJWT = jwt.sign({ id: user.id, name: user.name, email: user.email }, process.env.JWT_KEY!);
 
             // Save JWT on Cookie Session Object
             req.session = { jwt: userJWT };

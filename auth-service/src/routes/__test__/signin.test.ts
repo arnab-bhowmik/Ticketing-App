@@ -17,6 +17,7 @@ it('returns a 400 for an invalid/incorrect password entered at Sign In', async (
     await request(app)
     .post('/api/users/signup')
     .send({ 
+        name: 'User1',
         email: 'user1@abc.com', 
         password: 'abc123' 
     })
@@ -61,6 +62,7 @@ it('returns a 200 on successful Sign In and sets a cookie containing the Json We
     await request(app)
     .post('/api/users/signup')
     .send({ 
+        name: 'User1',
         email: 'user1@abc.com', 
         password: 'abc123' 
     })

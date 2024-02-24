@@ -7,6 +7,7 @@ it('returns a 200 on successful Sign Out and clears the cookie containing the Js
     await request(app)
     .post('/api/users/signup')
     .send({ 
+        name: 'User1',
         email: 'user1@abc.com', 
         password: 'abc123' 
     })

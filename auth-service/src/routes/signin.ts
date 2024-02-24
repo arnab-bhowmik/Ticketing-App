@@ -34,7 +34,7 @@ router.post('/api/users/signin', [
                 throw new BadRequestError('Invalid credentials!');
             } else {
                 // Generate JSON Web Token
-                const userJWT = jwt.sign({ id: existingUser.id, email: existingUser.email }, process.env.JWT_KEY!);
+                const userJWT = jwt.sign({ id: existingUser.id, name: existingUser.name, email: existingUser.email }, process.env.JWT_KEY!);
 
                 // Save JWT on Cookie Session Object
                 req.session = { jwt: userJWT };
