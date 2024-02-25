@@ -18,6 +18,16 @@ spec:
           image: ticketing-app-expiration-service:latest
           imagePullPolicy: IfNotPresent
           env:
+            - name: MAILJET_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mailjet-secret
+                  key: MAILJET_API_KEY
+            - name: MAILJET_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mailjet-secret
+                  key: MAILJET_API_SECRET
             - name: RABBITMQ_USERNAME
               valueFrom:
                 secretKeyRef:

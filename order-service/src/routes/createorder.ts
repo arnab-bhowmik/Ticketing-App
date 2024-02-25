@@ -7,6 +7,7 @@ import { Order, OrderStatus } from '../models/order';
 import { razorpay } from '../services/razorpay';
 import { OrderCreatedPublisher } from '../events/publishers/order-created-publisher';
 import { connection, exchange } from '../index';
+import { sendEmail } from '../services/transporter';
 
 const router = express.Router();
 
@@ -70,7 +71,10 @@ router.post('/api/orders', requireAuth, [
                 id:     ticket.id,
                 price:  ticket.price
             }
-        });        
+        });
+
+        // Send email to User - To-Do: Add userEmail to Order Collection & ticketTitle to underlying Ticket Doc
+        // sendEmail(user.email, `Order ${order.id} Created Successfully!`, `New Order created for purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
         res.status(201).send(order);
     }

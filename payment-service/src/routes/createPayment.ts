@@ -8,6 +8,7 @@ import { razorpay } from '../services/razorpay';
 import { Payment } from '../models/payment';
 import { PaymentCreatedPublisher } from '../events/publishers/payment-created-publisher';
 import { connection, exchange } from '../index';
+import { sendEmail } from '../services/transporter';
 
 const router = express.Router();             
 
@@ -91,6 +92,9 @@ router.post('/api/payments', requireAuth, [
             orderId:        payment.orderId,
             version:        payment.version
         });
+
+        // Send email to User - To-Do: Add userEmail to Order Collection & ticketTitle to underlying Ticket Doc
+        // sendEmail(user.email, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
         res.status(201).send({ payment });
     }   

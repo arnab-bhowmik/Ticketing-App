@@ -25,6 +25,16 @@ spec:
                 secretKeyRef:
                   name: jwt-secret
                   key: JWT_KEY
+            - name: MAILJET_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mailjet-secret
+                  key: MAILJET_API_KEY
+            - name: MAILJET_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mailjet-secret
+                  key: MAILJET_API_SECRET
             - name: RAZORPAY_KEY_ID
               valueFrom:
                 secretKeyRef:

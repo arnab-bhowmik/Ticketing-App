@@ -4,6 +4,7 @@ import { requireAuth, validateRequest } from '@ticketing_org/custom-modules';
 import { Ticket } from '../models/ticket';
 import { TicketCreatedPublisher } from '../events/publishers/ticket-created-publisher';
 import { connection, exchange } from '../index';
+import { sendEmail } from '../services/transporter';
 
 const router = express.Router();             
 
@@ -35,6 +36,9 @@ router.post('/api/tickets', requireAuth, [
             price:   ticket.price,
             userId:  ticket.userId
         });
+
+        // Send email to User - To-Do: Add userEmail to Ticket Collection
+        // sendEmail(user.email, `Ticket ${ticket.id} Listed Successfully!`, `New Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
 
         res.status(201).send(ticket);
     }   

@@ -3,6 +3,7 @@ import { requireAuth, validateRequest, NotFoundError, BadRequestError, NotAuthor
 import { Order, OrderStatus } from '../models/order';
 import { OrderCancelledPublisher } from '../events/publishers/order-cancelled-publisher';
 import { connection, exchange } from '../index';
+import { sendEmail } from '../services/transporter';
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
             price:  order.ticket.price
         }
     });
+
+    // Send email to User - To-Do: Add userEmail to Order Collection & ticketTitle to underlying Ticket Doc
+    // sendEmail(user.email, `Order ${order.id} Cancelled Successfully!`, `Order cancelled for purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
     res.status(204).send(order);
 });
