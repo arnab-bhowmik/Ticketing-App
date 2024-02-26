@@ -93,8 +93,8 @@ router.post('/api/payments', requireAuth, [
             version:        payment.version
         });
 
-        // Send email to User - To-Do: Add userEmail to Order Collection & ticketTitle to underlying Ticket Doc
-        // sendEmail(user.email, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
+        // Send Email to User
+        // sendEmail(req.currentUser!.email, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
         res.status(201).send({ payment });
     }   

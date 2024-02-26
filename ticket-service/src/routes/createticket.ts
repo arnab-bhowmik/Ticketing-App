@@ -37,8 +37,8 @@ router.post('/api/tickets', requireAuth, [
             userId:  ticket.userId
         });
 
-        // Send email to User - To-Do: Add userEmail to Ticket Collection
-        // sendEmail(user.email, `Ticket ${ticket.id} Listed Successfully!`, `New Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
+        // Send Email to User
+        sendEmail(req.currentUser!.email, `Ticket ${ticket.id} Listed Successfully!`, `New Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
 
         res.status(201).send(ticket);
     }   

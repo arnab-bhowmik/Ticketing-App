@@ -34,8 +34,8 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
         }
     });
 
-    // Send email to User - To-Do: Add userEmail to Order Collection & ticketTitle to underlying Ticket Doc
-    // sendEmail(user.email, `Order ${order.id} Cancelled Successfully!`, `Order cancelled for purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
+    // Send Email to User
+    sendEmail(req.currentUser!.email, `Order ${order.id} Cancelled Successfully!`, `Order cancelled against purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
     res.status(204).send(order);
 });

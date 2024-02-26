@@ -73,8 +73,8 @@ router.post('/api/orders', requireAuth, [
             }
         });
 
-        // Send email to User - To-Do: Add userEmail to Order Collection & ticketTitle to underlying Ticket Doc
-        // sendEmail(user.email, `Order ${order.id} Created Successfully!`, `New Order created for purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
+        // Send Email to User
+        sendEmail(req.currentUser!.email, `Order ${order.id} Created Successfully!`, `New Order created for purchase of Ticket with Title - ${ticket.title} & Price - ${ticket.price}`);
 
         res.status(201).send(order);
     }

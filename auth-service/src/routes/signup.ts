@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../services/transporter';
-
 import { User } from '../models/user';
 import { validateRequest, BadRequestError } from '@ticketing_org/custom-modules';
 
@@ -34,6 +33,7 @@ router.post('/api/users/signup', [
             // Creat the User & save in corresponding MongoDB Collection
             const user = User.build({ name, email, password });
             await user.save();
+            console.log('Successfully signed Up new User...');
 
             // Generate JSON Web Token
             const userJWT = jwt.sign({ id: user.id, name: user.name, email: user.email }, process.env.JWT_KEY!);
@@ -41,11 +41,10 @@ router.post('/api/users/signup', [
             // Save JWT on Cookie Session Object
             req.session = { jwt: userJWT };
 
-            // Send email to new User
+            // Send Email to new User
             sendEmail(user.email, `Welcome To TicketMart ${user.name}!`, 'Thanks for joining TicketMart, your one-stop shop for listing & buying Tickets for any and all kinds of events.');
 
             res.status(201).send(user);
-            console.log('Successfully signed Up new User...');
         }
     }
 );
