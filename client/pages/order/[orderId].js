@@ -25,7 +25,7 @@ const showOrder = ({ order, currentUser }) => {
     }, []);
     // Mark the Order as expired if the set time period for Order expiration completes 
     if (timeLeft < 0) {
-        return <div><h2>Order Expired</h2></div>
+        Router.push('/order');
     }
 
     // doRequest function invokes the useRequest() method which in turn calls the backend route
