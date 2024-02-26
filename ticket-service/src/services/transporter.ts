@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 export const sendEmail = async (receiver: string, subject: string, content: string) => {
     try {      
         transporter.sendMail({
-            from: 'ticketmart.notifications@gmail.com',
+            from: process.env.APP_NOTIFICATION_SENDER_EMAIL,
             to:   receiver,
             subject: subject,
             text: content

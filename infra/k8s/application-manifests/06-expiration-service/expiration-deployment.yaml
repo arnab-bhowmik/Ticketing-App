@@ -28,6 +28,11 @@ spec:
                 secretKeyRef:
                   name: mailjet-secret
                   key: MAILJET_API_SECRET
+            - name: APP_NOTIFICATION_SENDER_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: app-notification-sender-email-address-secret
+                  key: APP_NOTIFICATION_SENDER_EMAIL
             - name: RABBITMQ_USERNAME
               valueFrom:
                 secretKeyRef:
