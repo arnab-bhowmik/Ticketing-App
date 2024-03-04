@@ -70,7 +70,7 @@ router.post('/api/payments', requireAuth, [
         const razorpayPaymentObject = await razorpay.payments.fetch(razorpayPaymentId);
         if (razorpayPaymentObject.status !== 'captured') {
             // Update the payment status as captured
-            const captureRazorpayPayment = razorpay.payments.capture(razorpayPaymentId, order.price, 'INR');
+            const captureRazorpayPayment = razorpay.payments.capture(razorpayPaymentId, order.ticketPrice, 'INR');
             if (!captureRazorpayPayment) {
                 throw new BadRequestError('Issues while updating the Razorpay payment status as captured');
             }
@@ -94,7 +94,7 @@ router.post('/api/payments', requireAuth, [
         });
 
         // Send Email to User
-        // sendEmail(req.currentUser!.email, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
+        sendEmail(req.currentUser!.email, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticketTitle} & Price - ${order.ticketPrice}`);
 
         res.status(201).send({ payment });
     }   

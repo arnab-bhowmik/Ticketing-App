@@ -8,7 +8,8 @@ interface OrderAttribute {
     userId: string,
     status: OrderStatus,
     rzpOrderId: string,
-    price: number,
+    ticketTitle: string,
+    ticketPrice: number,
     version: number
 }
 
@@ -17,7 +18,8 @@ interface OrderDoc extends mongoose.Document {
     userId: string,
     status: OrderStatus,
     rzpOrderId: string,
-    price: number,
+    ticketTitle: string,
+    ticketPrice: number,
     version: number
 }
 
@@ -40,7 +42,11 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    price: {
+    ticketTitle: {
+        type: String,
+        required: true
+    },
+    ticketPrice: {
         type: Number,
         required: true
     }
@@ -65,7 +71,8 @@ orderSchema.statics.build = (attribute: OrderAttribute) => {
         userId: attribute.userId,
         status: attribute.status,
         rzpOrderId: attribute.rzpOrderId,
-        price: attribute.price,
+        ticketTitle: attribute.ticketTitle,
+        ticketPrice: attribute.ticketPrice,
         version: attribute.version
     });
 }

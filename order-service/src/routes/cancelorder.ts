@@ -30,6 +30,7 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
         rzpOrderId: order.rzpOrderId,
         ticket: {
             id:     order.ticket.id,
+            title:  order.ticket.title,
             price:  order.ticket.price
         }
     });

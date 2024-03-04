@@ -69,6 +69,7 @@ router.post('/api/orders', requireAuth, [
             rzpOrderId: order.rzpOrderId,
             ticket: {
                 id:     ticket.id,
+                title:  ticket.title,
                 price:  ticket.price
             }
         });

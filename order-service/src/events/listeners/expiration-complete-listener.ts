@@ -35,6 +35,7 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
                     rzpOrderId: order.rzpOrderId,
                     ticket: {
                         id:     order.ticket.id,
+                        title:  order.ticket.title,
                         price:  order.ticket.price
                     }
                 });
