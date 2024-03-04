@@ -13,6 +13,9 @@ declare global {
 
 let mongo: any;
 process.env.JWT_KEY = 'fgfhjhukhbdxhgjhk';
+process.env.MAILJET_API_KEY = '5b8048787ff181e1e613076ceb84933c';
+process.env.MAILJET_API_SECRET = 'f3bb757f94fe01bc1e27735dda95cb4d';
+process.env.APP_NOTIFICATION_SENDER_EMAIL = 'ticketmart.mailer@gmail.com';
 
 // Execute the function at the beginning of a Test Cycle
 beforeAll(async () => {
