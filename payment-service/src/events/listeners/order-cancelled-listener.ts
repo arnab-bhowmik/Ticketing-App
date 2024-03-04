@@ -2,8 +2,6 @@ import amqp from 'amqplib';
 import { Subjects, Listener, OrderCancelledEvent } from "@ticketing_org/custom-modules";
 import { Order } from '../../models/order';
 import { OrderStatus } from '@ticketing_org/custom-modules';
-// import { PaymentCreatedPublisher } from '../publishers/payment-created-publisher';
-// import { connection, exchange } from '../../index';
 
 export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
     subject: Subjects.OrderCancelled = Subjects.OrderCancelled;
@@ -24,15 +22,6 @@ export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
             order.set({ status: OrderStatus.Cancelled });
             await order.save();
             
-            // // Publish an event for Payment Update
-            // await new PaymentCreatedPublisher(connection!,exchange).publish({
-            //     // id:      ticket.id,
-            //     // version: ticket.version,
-            //     // title:   ticket.title,
-            //     // price:   ticket.price,
-            //     // userId:  ticket.userId,
-            //     // orderId: ticket.orderId
-            // });
             return Boolean(true);
         } else {
             return Boolean(false);
