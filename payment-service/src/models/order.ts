@@ -79,4 +79,4 @@ orderSchema.statics.build = (attribute: OrderAttribute) => {
 
 const Order = mongoose.model<OrderDoc, OrderModel>('Order', orderSchema);
 
-export { Order };
+export { Order, OrderStatus };

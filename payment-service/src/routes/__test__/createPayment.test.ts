@@ -1,10 +1,9 @@
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { app } from '../../app';
-import { Order } from '../../models/order';
-import { OrderStatus } from '@ticketing_org/custom-modules';
-import { razorpay } from '../../services/razorpay';
+import { Order, OrderStatus } from '../../models/order';
 import { Payment } from '../../models/payment';
+import { razorpay } from '../../services/razorpay';
 import { connection } from '../../index';
 
 // The following Order & Payment combination exists in the Razorpay Test Environment. Razorpay payment can only be created from UI hence using this combination here!
@@ -21,8 +20,9 @@ it('returns 401 when making payment for an order that does not belong to the Use
         id: new mongoose.Types.ObjectId().toHexString(),
         userId: new mongoose.Types.ObjectId().toHexString(),
         status: OrderStatus.Created,
-        rzpOrderId: razorpayOrderId,                     
-        price: 950,
+        rzpOrderId: razorpayOrderId, 
+        ticketTitle: 'concert',                    
+        ticketPrice: 950,
         version: 0
     });
     await order.save();
@@ -39,7 +39,8 @@ it('returns 400 when making payment for an cancelled order', async () => {
         userId,
         status: OrderStatus.Cancelled,
         rzpOrderId: razorpayOrderId,
-        price: 950,
+        ticketTitle: 'concert',                    
+        ticketPrice: 950,
         version: 0
     });
     await order.save();
@@ -56,7 +57,8 @@ it('returns a 201 with valid inputs', async () => {
         userId,
         status: OrderStatus.Created,
         rzpOrderId: razorpayOrderId,
-        price: 950,
+        ticketTitle: 'concert',                    
+        ticketPrice: 950,
         version: 0
     });
     await order.save();
@@ -68,7 +70,7 @@ it('returns a 201 with valid inputs', async () => {
     expect(razorpayPaymentObject).not.toBeNull();
     expect(razorpayPaymentObject!.order_id).toEqual(razorpayOrderId);
     expect(razorpayPaymentObject!.status).toEqual('captured');
-    expect(razorpayPaymentObject!.amount).toEqual(order.price * 100);
+    expect(razorpayPaymentObject!.amount).toEqual(order.ticketPrice * 100);
     expect(razorpayPaymentObject!.currency).toEqual('INR');
 });
 
@@ -81,7 +83,8 @@ it('emits payment created event on successful payment creation', async () => {
         userId,
         status: OrderStatus.Created,
         rzpOrderId: razorpayOrderId,
-        price: 950,
+        ticketTitle: 'concert',                    
+        ticketPrice: 950,
         version: 0
     });
     await order.save();
