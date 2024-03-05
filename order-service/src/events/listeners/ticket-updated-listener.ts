@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import { Subjects, Listener, TicketUpdatedEvent } from "@ticketing_org/custom-modules";
+import { Subjects, Listener, TicketUpdatedEvent, BadRequestError } from "@ticketing_org/custom-modules";
 import { Ticket } from "../../models/ticket";
 
 export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
@@ -14,7 +14,7 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
                 version: data.version - 1
             });
             if (!ticket) {
-                throw new Error('Ticket not found');
+                throw new BadRequestError('Ticket not found');
             }
             // Set the incoming event attribute values to the ticket record
             const { title, price } = data;

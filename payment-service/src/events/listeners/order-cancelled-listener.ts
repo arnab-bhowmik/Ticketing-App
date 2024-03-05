@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import { Subjects, Listener, OrderCancelledEvent } from "@ticketing_org/custom-modules";
+import { Subjects, Listener, OrderCancelledEvent, BadRequestError } from "@ticketing_org/custom-modules";
 import { Order } from '../../models/order';
 import { OrderStatus } from '@ticketing_org/custom-modules';
 
@@ -16,7 +16,7 @@ export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
                 version: data.version - 1
             });
             if (!order) {
-                throw new Error('Order not found');
+                throw new BadRequestError('Order not found');
             }
             // Update the Order status to Cancelled
             order.set({ status: OrderStatus.Cancelled });

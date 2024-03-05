@@ -1,8 +1,9 @@
 import amqp from 'amqplib';
-import { Subjects, Listener, ExpirationCompleteEvent, OrderStatus } from "@ticketing_org/custom-modules";
+import { Subjects, Listener, ExpirationCompleteEvent, OrderStatus, BadRequestError } from "@ticketing_org/custom-modules";
 import { Order } from '../../models/order';
 import { OrderCancelledPublisher } from '../publishers/order-cancelled-publisher';
 import { connection, exchange } from '../../index';
+import { sendEmail } from '../../services/transporter';
 
 export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent> {
     subject: Subjects.ExpirationComplete = Subjects.ExpirationComplete;
@@ -14,7 +15,7 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
             // Find the Order that needs to be expired
             const order = await Order.findById(data.orderId).populate('ticket');
             if (!order) {
-                throw new Error('Order not found');
+                throw new BadRequestError('Order not found');
             }
             
             // Check if the Order is already marked as complete prior its expiry. If YES, don't update the status from 'Complete' to 'Cancelled'
@@ -39,6 +40,9 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
                         price:  order.ticket.price
                     }
                 });
+
+                // Send Email to User
+                // sendEmail(req.currentUser!.email, `Order ${order.id} Cancelled Successfully!`, `Order cancelled due to timeout against purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
             }
 
             return Boolean(true);  
