@@ -1,19 +1,22 @@
-import axios from 'axios';
 import Router from 'next/router';
 import { useEffect } from "react";
 import useRequest from '../../hooks/use-request';
 
 export default () => {
-    const { doRequest } = useRequest({
-        url: '/api/users/signout',
-        method: 'post',
-        body: {},
-        onSuccess: () => Router.push('/')
-    });
+    const { doRequest, errors } = useRequest();
 
     useEffect(() => {
-        doRequest();
+        doRequest({ 
+            url: '/api/users/signout',
+            method: 'post',
+            body: {},
+            onSuccess: () => Router.push('/'),
+            props: {}
+        });
     }, []);
 
-    return <div>Signing you out...!</div>;
+    return <div>
+        Signing you out...!
+        {errors}
+    </div>;
 };

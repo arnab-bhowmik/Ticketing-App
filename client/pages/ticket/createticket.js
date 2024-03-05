@@ -5,19 +5,19 @@ import useRequest from "../../hooks/use-request";
 const createTicket = () => {
     const [title, setTitle] = useState('');
     const [price, setPrice] = useState('');
-
-    // doRequest function invokes the useRequest() method which in turn calls the backend route
-    const { doRequest, errors } = useRequest({
-        url: '/api/tickets',
-        method: 'post',
-        body: { title, price },
-        onSuccess: () => Router.push('/')
-    });
+    const { doRequest, errors } = useRequest();
 
     // onSubmit function invokes the doRequest() method
     const onSubmit = (event) => {
         event.preventDefault();
-        doRequest();
+        // doRequest();
+        doRequest({ 
+            url: '/api/tickets',
+            method: 'post',
+            body: { title, price },
+            onSuccess: () => Router.push('/'),
+            props: {}
+        });
     };
 
     // onBlur function converts a number to decimal value until 2 places after the decimal point

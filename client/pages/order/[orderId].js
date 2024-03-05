@@ -5,6 +5,7 @@ import useRequest from "../../hooks/use-request";
 
 const showOrder = ({ order, currentUser }) => {
     const [timeLeft, setTimeLeft] = useState(0);
+    const { doRequest, errors } = useRequest();
 
     // useEffect() function lets us calculate the remaining time for Order Expiration
     useEffect(() => {
@@ -28,14 +29,6 @@ const showOrder = ({ order, currentUser }) => {
         Router.push('/order');
     }
 
-    // doRequest function invokes the useRequest() method which in turn calls the backend route
-    const { doRequest, errors } = useRequest({
-        url: '/api/payments',
-        method: 'post',
-        body: { orderId: order.id },                    // The body also contains the params razorpayOrderId & razorpayPaymentId which is incorporated by doRequest() function under the hood
-        onSuccess: (payment) => Router.push('/order')
-    });
-
     // Initialize the Razorpay Checkout Form and append it to the document.body as a child element
     const initializeRazorpay = () => {
         return new Promise((resolve) => {
@@ -46,6 +39,7 @@ const showOrder = ({ order, currentUser }) => {
             document.body.appendChild(script);
         });
     };
+
     // Function to get invoked on user clicking the 'Pay with Razorpay' button
     const createRazorpayCheckout = async () => {
         const res = await initializeRazorpay();
@@ -65,7 +59,16 @@ const showOrder = ({ order, currentUser }) => {
           handler: function (response) {
             alert(`Payment successful for RazorPay Order ${response.razorpay_order_id}. Payment Reference Id - ${response.razorpay_payment_id}`);
             // Invoke the doRequest() function to invoke the /api/payments route
-            doRequest({ razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id });
+            doRequest({ 
+                url: '/api/payments',
+                method: 'post',
+                body: { orderId: order.id },                    // The body also contains the params razorpayOrderId & razorpayPaymentId which is incorporated by doRequest() function under the hood
+                onSuccess: (payment) => Router.push('/order'),
+                props: { 
+                    razorpayOrderId: response.razorpay_order_id, 
+                    razorpayPaymentId: response.razorpay_payment_id 
+                }
+            });
           }
         };
         // Instantiate the Payment Object and invoke the open() method for loading the Razorpay payment checkout form
@@ -73,6 +76,17 @@ const showOrder = ({ order, currentUser }) => {
         paymentObject.open();
     };
     
+    // Function to get invoked on user clicking the 'Cancel' button
+    const cancelOrder = async () => {
+        doRequest({ 
+            url: `/api/orders/${order.id}`,
+            method: 'delete',
+            body: {},
+            onSuccess: (order) => Router.push('/order'),
+            props: {}
+        });
+    }
+
     return (
         <div>
           <h1>Order Id: {order.id}</h1>
@@ -89,6 +103,7 @@ const showOrder = ({ order, currentUser }) => {
           ------------------------------------------------------- End ------------------------------------------------------- 
           */}
           <button onClick={createRazorpayCheckout} className="btn btn-primary">Pay with Razorpay</button>
+          <button onClick={cancelOrder} className="btn btn-danger">Cancel</button>
           {errors}
         </div>
     );
