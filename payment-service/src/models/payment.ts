@@ -4,8 +4,7 @@ import { updateIfCurrentPlugin } from 'mongoose-update-if-current';
 // Interface to define the properties the Payment Schema has
 interface PaymentAttribute {
     rzpPaymentId: string,
-    orderId: string,
-    version: number
+    orderId: string
 }
 
 // Interface to define the properties the Payment Document has

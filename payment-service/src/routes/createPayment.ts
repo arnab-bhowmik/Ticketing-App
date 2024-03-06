@@ -80,8 +80,7 @@ router.post('/api/payments', requireAuth, [
         // Build the Payment record
         const payment = Payment.build({
             rzpPaymentId: razorpayPaymentId,
-            orderId,
-            version: 0
+            orderId
         });
         await payment.save();
 
