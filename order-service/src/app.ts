@@ -24,7 +24,7 @@ app.use(showAllOrdersRouter);
 app.use(cancelOrderRouter);
 
 app.get('*', async () => {
-    throw new NotFoundError();
+    throw new NotFoundError('Route Not Found');
 });
 
 app.use(errorHandler);

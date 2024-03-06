@@ -18,7 +18,7 @@ app.use(currentUser);
 app.use(createPaymentRouter);
 
 app.get('*', async () => {
-    throw new NotFoundError();
+    throw new NotFoundError('Route Not Found');
 });
 
 app.use(errorHandler);

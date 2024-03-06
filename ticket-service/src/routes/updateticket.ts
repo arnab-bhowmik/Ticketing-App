@@ -21,7 +21,7 @@ router.put('/api/tickets/:id', requireAuth, [
         const ticket = await Ticket.findById(req.params.id);
         // Throw error if the Ticket doesn't exist otherwise return the Ticket
         if (!ticket) {
-            throw new NotFoundError();
+            throw new NotFoundError('Ticket Not Found');
         }
         // Check if Ticket is already reserved
         if (ticket.orderId) {

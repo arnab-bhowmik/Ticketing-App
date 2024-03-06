@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import { Subjects, Listener, ExpirationCompleteEvent, OrderStatus, BadRequestError } from "@ticketing_org/custom-modules";
+import { Subjects, Listener, ExpirationCompleteEvent, OrderStatus, NotFoundError } from "@ticketing_org/custom-modules";
 import { Order } from '../../models/order';
 import { OrderCancelledPublisher } from '../publishers/order-cancelled-publisher';
 import { connection, exchange } from '../../index';
@@ -15,7 +15,7 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
             // Find the Order that needs to be expired
             const order = await Order.findById(data.orderId).populate('ticket');
             if (!order) {
-                throw new BadRequestError('Order not found');
+                throw new NotFoundError('Order Not Found');
             }
             
             // Check if the Order is already marked as complete prior its expiry. If YES, don't update the status from 'Complete' to 'Cancelled'

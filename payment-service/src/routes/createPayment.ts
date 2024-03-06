@@ -30,7 +30,7 @@ router.post('/api/payments', requireAuth, [
         const { razorpayOrderId, razorpayPaymentId, orderId } = req.body;     
         const order = await Order.findById(orderId);
         if (!order) {
-            throw new NotFoundError();
+            throw new NotFoundError('Order Not Found');
         }
         // Check if the user initiating payment is the one who created the Order
         if (order.userId !== req.currentUser!.id) {

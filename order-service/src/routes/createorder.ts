@@ -26,7 +26,7 @@ router.post('/api/orders', requireAuth, [
         // Find the ticket the User is trying to buy
         const ticket = await Ticket.findById(ticketId);
         if (!ticket) {
-            throw new NotFoundError();
+            throw new NotFoundError('Ticket Not Found');
         }
         // Ensure the Ticket is not already reserved as part of another Order
         const isReserved = await ticket.isReserved();

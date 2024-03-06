@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import { Subjects, Listener, PaymentCreatedEvent, OrderStatus, BadRequestError } from "@ticketing_org/custom-modules";
+import { Subjects, Listener, PaymentCreatedEvent, OrderStatus, NotFoundError } from "@ticketing_org/custom-modules";
 import { Order } from "../../models/order";
 
 export class PaymentCreatedListener extends Listener<PaymentCreatedEvent> {
@@ -13,7 +13,7 @@ export class PaymentCreatedListener extends Listener<PaymentCreatedEvent> {
             const { orderId } = data;
             const order = await Order.findById(orderId);
             if (!order) {
-                throw new BadRequestError('Order could not be found');
+                throw new NotFoundError('Order Not Found');
             }
             // Set the Order status to Complete
             order.set({ status: OrderStatus.Completed });

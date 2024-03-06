@@ -11,7 +11,7 @@ router.delete('/api/tickets/:ticketId', requireAuth, async (req: Request, res: R
     // Retrieve the Ticket details for the provided Ticket Id
     const ticket = await Ticket.findById(req.params.ticketId);
     if (!ticket) {
-        throw new NotFoundError();
+        throw new NotFoundError('Ticket Not Found');
     }
     if (ticket.userId !== req.currentUser!.id) {
         throw new NotAuthorizedError();

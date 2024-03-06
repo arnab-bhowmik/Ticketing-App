@@ -26,7 +26,7 @@ app.use(updateTicketRouter);
 app.use(deleteTicketRouter);
 
 app.get('*', async () => {
-    throw new NotFoundError();
+    throw new NotFoundError('Route Not Found');
 });
 
 app.use(errorHandler);
