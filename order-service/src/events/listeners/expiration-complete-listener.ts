@@ -19,7 +19,7 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
             }
             
             // Check if the Order is already marked as complete prior its expiry. If YES, don't update the status from 'Complete' to 'Cancelled'
-            if (order.status === OrderStatus.Complete) {
+            if (order.status === OrderStatus.Completed) {
                 console.log('Order is already Complete, hence not updating status to Cancelled');
             } else {
                 // Update the Order Status to Cancelled

@@ -18,13 +18,14 @@ router.delete('/api/tickets/:ticketId', requireAuth, async (req: Request, res: R
     }
     // Check if the Ticket isn't already associated with an Order. This scenario happens when both the Ticket Creator & Buyer have navigated to the Ticket Details page from the Landing Page
     if (ticket.orderId !== undefined) {
-        throw new BadRequestError(`Cannot delete Ticket with Id ${ticket.id} & Title ${ticket.title} as it is associated with Order ${ticket.orderId}`);
+        throw new BadRequestError(`Cannot delete Ticket - ${ticket.title} as it is associated with Order ${ticket.orderId}`);
     }
     // Delete the Ticket record from the database
     try {
         await Ticket.findByIdAndDelete(req.params.ticketId);      
     } catch (error) {
-        throw new BadRequestError(`Encountered error while deleting Ticket with Id ${ticket.id} & Title ${ticket.title}, ${error}`);
+        console.log(error);
+        throw new BadRequestError(`Encountered error while deleting Ticket - ${ticket.title}`);
     }
 
     // Publish an event for Ticket Deletion

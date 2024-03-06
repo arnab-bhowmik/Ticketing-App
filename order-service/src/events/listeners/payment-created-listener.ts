@@ -16,7 +16,7 @@ export class PaymentCreatedListener extends Listener<PaymentCreatedEvent> {
                 throw new BadRequestError('Order could not be found');
             }
             // Set the Order status to Complete
-            order.set({ status: OrderStatus.Complete });
+            order.set({ status: OrderStatus.Completed });
             await order.save();
 
             return Boolean(true);  
