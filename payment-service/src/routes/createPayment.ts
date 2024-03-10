@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { requireAuth, validateRequest, BadRequestError, NotFoundError, NotAuthorizedError, OrderStatus } from '@ticketing_org/custom-modules';
-import { Order } from '../models/order';
+import { requireAuth, validateRequest, BadRequestError, NotFoundError, NotAuthorizedError } from '@ticketing_org/custom-modules';
+import { Order, OrderStatus } from '../models/order';
 // import { stripe } from '../services/stripe';
 // import { Payment } from '../models/payment-stripe';
 import { razorpay } from '../services/razorpay';
@@ -83,6 +83,10 @@ router.post('/api/payments', requireAuth, [
             orderId
         });
         await payment.save();
+
+        // Set the Order status to Complete
+        order.set({ status: OrderStatus.Completed });
+        await order.save();
 
         // Publish an event for Payment Creation
         await new PaymentCreatedPublisher(connection!,exchange).publish({

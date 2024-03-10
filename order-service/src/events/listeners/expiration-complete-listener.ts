@@ -18,10 +18,8 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
                 throw new NotFoundError('Order Not Found');
             }
             
-            // Check if the Order is already marked as complete prior its expiry. If YES, don't update the status from 'Complete' to 'Cancelled'
-            if (order.status === OrderStatus.Completed) {
-                console.log('Order is already Complete, hence not updating status to Cancelled');
-            } else {
+            // Check if the Order is already 'Cancelled' via the 'Cancel' button or 'Completed' prior its expiry. If YES, don't update the status further
+            if (order.status !== OrderStatus.Completed && order.status !== OrderStatus.Cancelled) {
                 // Update the Order Status to Cancelled
                 order.set({ status: OrderStatus.Cancelled });
                 await order.save();

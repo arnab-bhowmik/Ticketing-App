@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import { Subjects, Listener, OrderCancelledEvent, NotFoundError } from "@ticketing_org/custom-modules";
+import { Subjects, Listener, OrderCancelledEvent, NotFoundError, BadRequestError } from "@ticketing_org/custom-modules";
 import { Ticket } from '../../models/ticket';
 import { TicketUpdatedPublisher } from '../publishers/ticket-updated-publisher';
 import { connection, exchange } from '../../index';
@@ -15,6 +15,10 @@ export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
             const ticket = await Ticket.findById(data.ticket.id);
             if (!ticket) {
                 throw new NotFoundError('Ticket Not Found');
+            }
+            // Check if the Order Cancellation Event is for the same OrderId the Ticket is currently associated with
+            if (ticket.orderId != data.id) {
+                throw new BadRequestError('Order Cancellation Event does not correspond to the Order the Ticket is currently assoiated with');
             }
             // Mark the ticket as being unreserved by setting its orderId property to undefined
             ticket.set({ orderId: undefined });
