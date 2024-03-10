@@ -13,7 +13,15 @@ const showTicket = ({ currentUser, ticket }) => {
       onSuccess: (order) => Router.push('/order/[orderId]', `/order/${order.id}`),
       props: {}
     });
-  }
+  };
+
+  // Function to get invoked on user clicking the 'Edit' button
+  const updateTicket = async () => {
+    Router.push({
+      pathname: '/ticket/updateticket',
+      query: { id: ticket.id, title: ticket.title, price: ticket.price }
+    });
+  };
 
   // Function to get invoked on user clicking the 'Delete' button
   const deleteTicket = async () => {
@@ -24,7 +32,7 @@ const showTicket = ({ currentUser, ticket }) => {
       onSuccess: () => Router.push('/'),
       props: {}
     });
-  }
+  };
   
   return (
       <div>
@@ -33,7 +41,12 @@ const showTicket = ({ currentUser, ticket }) => {
         {errors}
         {currentUser && (ticket.userId !== currentUser.id
           ? ( <button onClick={purchaseTicket} className="btn btn-primary">Purchase</button> )
-          : ( <button onClick={deleteTicket} className="btn btn-danger">Delete</button> )
+          : ( 
+            <>
+              <button onClick={updateTicket} className="btn btn-primary">Edit</button>
+              <button onClick={deleteTicket} className="btn btn-danger">Delete</button>
+            </>
+          )
         )}
         {!currentUser && ( <span>Please Sign Up/Sign In To Purchase</span> )}
       </div>
