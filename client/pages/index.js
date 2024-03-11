@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-const Landing = ({ currentUser, tickets }) => {
-    // return currentUser ? <h1>Signed In Successfully!</h1> : <h1>User not Signed In!</h1>
+const Landing = ({ tickets, currentUser }) => {
     const ticketList = tickets.map((ticket) => {
         return (
           <tr key={ticket.id}>

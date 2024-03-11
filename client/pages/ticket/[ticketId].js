@@ -1,7 +1,7 @@
 import Router from 'next/router';
 import useRequest from "../../hooks/use-request";
 
-const showTicket = ({ currentUser, ticket }) => {
+const showTicket = ({ ticket, currentUser }) => {
   const { doRequest, errors } = useRequest();
 
   // Function to get invoked on user clicking the 'Purchase' button
