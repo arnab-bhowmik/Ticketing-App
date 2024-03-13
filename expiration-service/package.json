@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ticketing_org/custom-modules": "^1.0.52",
+    "@ticketing_org/custom-modules": "^1.0.53",
     "@types/bull": "^4.10.0",
     "@types/node-mailjet": "^3.3.12",
     "@types/nodemailer": "^6.4.14",
