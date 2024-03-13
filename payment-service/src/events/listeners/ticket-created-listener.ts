@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 import { Subjects, Listener, TicketCreatedEvent } from "@ticketing_org/custom-modules";
-import { Ticket } from "../../models/ticket";
+import { Ticket } from '../../models/ticket';
 
 export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
     subject: Subjects.TicketCreated = Subjects.TicketCreated;

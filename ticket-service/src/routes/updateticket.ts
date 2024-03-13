@@ -4,6 +4,7 @@ import { requireAuth, validateRequest, NotFoundError, NotAuthorizedError, BadReq
 import { Ticket } from '../models/ticket';
 import { TicketUpdatedPublisher } from '../events/publishers/ticket-updated-publisher';
 import { connection, exchange } from '../index';
+import { sendEmail } from '../services/transporter';
 
 const router = express.Router();            
 
@@ -40,12 +41,16 @@ router.put('/api/tickets/:id', requireAuth, [
 
         // Publish an event for Ticket Update
         await new TicketUpdatedPublisher(connection!,exchange).publish({
-            id:      ticket.id,
-            version: ticket.version,
-            title:   ticket.title,
-            price:   ticket.price,
-            userId:  ticket.userId
+            id:         ticket.id,
+            version:    ticket.version,
+            title:      ticket.title,
+            price:      ticket.price,
+            userId:     ticket.userId,
+            userEmail:  ticket.userEmail
         });
+
+        // Send Email to User
+        sendEmail(ticket.userEmail, `Ticket ${ticket.id} Updated Successfully!`, `Updated Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
 
         res.status(200).send(ticket);
     }

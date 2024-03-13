@@ -21,12 +21,13 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
             await ticket.save();
             // Publish an event for Ticket Update
             await new TicketUpdatedPublisher(connection!,exchange).publish({
-                id:      ticket.id,
-                version: ticket.version,
-                title:   ticket.title,
-                price:   ticket.price,
-                userId:  ticket.userId,
-                orderId: ticket.orderId
+                id:         ticket.id,
+                version:    ticket.version,
+                title:      ticket.title,
+                price:      ticket.price,
+                userId:     ticket.userId,
+                userEmail:  ticket.userEmail,
+                orderId:    ticket.orderId
             });
             return Boolean(true);
         } else {

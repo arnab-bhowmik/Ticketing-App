@@ -24,21 +24,23 @@ router.post('/api/tickets', requireAuth, [
         const ticket = Ticket.build({
             title,
             price,
-            userId: req.currentUser!.id
+            userId: req.currentUser!.id,
+            userEmail: req.currentUser!.email,
         });
         await ticket.save();
 
         // Publish an event for Ticket Creation
         await new TicketCreatedPublisher(connection!,exchange).publish({
-            id:      ticket.id,
-            version: ticket.version,
-            title:   ticket.title,
-            price:   ticket.price,
-            userId:  ticket.userId
+            id:         ticket.id,
+            version:    ticket.version,
+            title:      ticket.title,
+            price:      ticket.price,
+            userId:     ticket.userId,
+            userEmail:  ticket.userEmail
         });
 
         // Send Email to User
-        sendEmail(req.currentUser!.email, `Ticket ${ticket.id} Listed Successfully!`, `New Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
+        sendEmail(ticket.userEmail, `Ticket ${ticket.id} Listed Successfully!`, `New Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
 
         res.status(201).send(ticket);
     }   

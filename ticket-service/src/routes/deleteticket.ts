@@ -34,11 +34,12 @@ router.delete('/api/tickets/:ticketId', requireAuth, async (req: Request, res: R
         version: ticket.version,
         title:   ticket.title,
         price:   ticket.price,
-        userId:  ticket.userId
+        userId:  ticket.userId,
+        userEmail:  ticket.userEmail
     });
 
     // Send Email to User
-    sendEmail(req.currentUser!.email, `Ticket ${ticket.id} Deleted Successfully!`, `Deleted Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
+    sendEmail(ticket.userEmail, `Ticket ${ticket.id} Deleted Successfully!`, `Deleted Ticket listed on TicketMart with Title - ${ticket.title} & Price - ${ticket.price}`);
 
     res.status(204).send(ticket);  
 });
