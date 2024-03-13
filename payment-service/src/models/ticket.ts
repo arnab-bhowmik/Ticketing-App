@@ -17,8 +17,7 @@ export interface TicketDoc extends mongoose.Document {
     price: number,
     userId: string,
     userEmail: string,
-    version: number,
-    isReserved(): Promise<boolean>
+    version: number
 }
 
 // Interface to define the properties the Ticket Model has
@@ -68,21 +67,6 @@ ticketSchema.statics.build = (attribute: TicketAttribute) => {
         userId: attribute.userId,
         userEmail: attribute.userEmail
     });
-}
-
-// Define the logic for marking a ticket as reserved
-ticketSchema.methods.isReserved = async function() {
-    const existingOrder = await Order.findOne({
-        ticket: this,
-        status: {
-            $in: [
-                OrderStatus.Created,
-                OrderStatus.Completed
-            ]
-        }
-    });
-    // Converts the ouput to boolean True or False depending on whether there is an existing order found
-    return !!existingOrder;
 }
 
 const Ticket = mongoose.model<TicketDoc, TicketModel>('Ticket', ticketSchema);

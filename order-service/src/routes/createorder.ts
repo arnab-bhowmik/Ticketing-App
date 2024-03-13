@@ -52,6 +52,7 @@ router.post('/api/orders', requireAuth, [
         // Create the Order and save it to Database
         const order = Order.build({
             userId: req.currentUser!.id,
+            userEmail: req.currentUser!.email,
             status: OrderStatus.Created,
             expiresAt: expiration,
             rzpOrderId: rzpOrder.id,
@@ -64,18 +65,22 @@ router.post('/api/orders', requireAuth, [
             id:         order.id,
             version:    order.version,
             userId:     order.userId,
+            userEmail:  order.userEmail,
             status:     order.status,
             expiresAt:  order.expiresAt.toISOString(),
             rzpOrderId: order.rzpOrderId,
             ticket: {
-                id:     ticket.id,
-                title:  ticket.title,
-                price:  ticket.price
+                id:         ticket.id,
+                title:      ticket.title,
+                price:      ticket.price,
+                userId:     ticket.userId,
+                userEmail:  ticket.userEmail,
+                version:    ticket.version
             }
         });
 
         // Send Email to User
-        sendEmail(req.currentUser!.email, `Order ${order.id} Created Successfully!`, `New Order created for purchase of Ticket with Title - ${ticket.title} & Price - ${ticket.price}`);
+        sendEmail(order.userEmail, `Order ${order.id} Created Successfully!`, `New Order created for purchase of Ticket with Title - ${ticket.title} & Price - ${ticket.price}`);
 
         res.status(201).send(order);
     }

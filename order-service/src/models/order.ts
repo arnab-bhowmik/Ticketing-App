@@ -6,6 +6,7 @@ import { TicketDoc } from "./ticket";
 // Interface to define the properties the Order Schema has
 interface OrderAttribute {
     userId: string,
+    userEmail: string,
     status: OrderStatus,
     expiresAt: Date,
     rzpOrderId: string,
@@ -15,6 +16,7 @@ interface OrderAttribute {
 // Interface to define the properties the Order Document has
 interface OrderDoc extends mongoose.Document {
     userId: string,
+    userEmail: string,
     status: OrderStatus,
     expiresAt: Date,
     rzpOrderId: string,
@@ -29,6 +31,10 @@ interface OrderModel extends mongoose.Model<OrderDoc> {
 
 const orderSchema = new mongoose.Schema({
     userId: {
+        type: String,
+        required: true
+    },
+    userEmail: {
         type: String,
         required: true
     },

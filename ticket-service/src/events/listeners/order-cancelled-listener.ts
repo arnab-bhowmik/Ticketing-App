@@ -18,7 +18,7 @@ export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
             }
             // Check if the Order Cancellation Event is for the same OrderId the Ticket is currently associated with
             if (ticket.orderId != data.id) {
-                throw new BadRequestError('Order Cancellation Event does not correspond to the Order the Ticket is currently assoiated with');
+                throw new BadRequestError('Order Cancellation Event does not correspond to the Order the Ticket is currently associated with');
             }
             // Mark the ticket as being unreserved by setting its orderId property to undefined
             ticket.set({ orderId: undefined });

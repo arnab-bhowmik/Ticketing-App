@@ -25,18 +25,22 @@ router.delete('/api/orders/:orderId', requireAuth, async (req: Request, res: Res
         id:         order.id,
         version:    order.version,
         userId:     order.userId,
+        userEmail:  order.userEmail,
         status:     order.status,
         expiresAt:  order.expiresAt.toISOString(),
         rzpOrderId: order.rzpOrderId,
         ticket: {
-            id:     order.ticket.id,
-            title:  order.ticket.title,
-            price:  order.ticket.price
+            id:         order.ticket.id,
+            title:      order.ticket.title,
+            price:      order.ticket.price,
+            userId:     order.ticket.userId,
+            userEmail:  order.ticket.userEmail,
+            version:    order.ticket.version
         }
     });
 
     // Send Email to User
-    sendEmail(req.currentUser!.email, `Order ${order.id} Cancelled Successfully!`, `Order cancelled against purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
+    sendEmail(order.userEmail, `Order ${order.id} Cancelled Successfully!`, `Order cancelled against purchase of Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
     res.status(204).send(order);
 });

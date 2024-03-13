@@ -1,7 +1,6 @@
 import amqp from 'amqplib';
 import { Subjects, Listener, OrderCancelledEvent, NotFoundError } from "@ticketing_org/custom-modules";
-import { Order } from '../../models/order';
-import { OrderStatus } from '@ticketing_org/custom-modules';
+import { Order, OrderStatus } from '../../models/order';
 
 export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
     subject: Subjects.OrderCancelled = Subjects.OrderCancelled;

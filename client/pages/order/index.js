@@ -4,6 +4,7 @@ const orderIndex = ({ orders, currentUser }) => {
     const orderList = orders.map((order) => {
         return (
           <tr key={order.id}>
+            <td>{order.id}</td>
             <td>{order.ticket.title}</td>
             <td>{order.status}</td>
             {currentUser && (order.status === 'Created'
@@ -25,6 +26,7 @@ const orderIndex = ({ orders, currentUser }) => {
         <table className="table">
         <thead>
             <tr>
+            <th>Order Id</th>
             <th>Ticket Title</th>
             <th>Order Status</th>
             <th>Payment Status</th>

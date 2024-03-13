@@ -28,7 +28,7 @@ router.post('/api/payments', requireAuth, [
     async (req: Request, res: Response) => {
         // Look up the Order if it exists
         const { razorpayOrderId, razorpayPaymentId, orderId } = req.body;     
-        const order = await Order.findById(orderId);
+        const order = await Order.findById(orderId).populate('ticket');
         if (!order) {
             throw new NotFoundError('Order Not Found');
         }
@@ -70,7 +70,7 @@ router.post('/api/payments', requireAuth, [
         const razorpayPaymentObject = await razorpay.payments.fetch(razorpayPaymentId);
         if (razorpayPaymentObject.status !== 'captured') {
             // Update the payment status as captured
-            const captureRazorpayPayment = razorpay.payments.capture(razorpayPaymentId, order.ticketPrice, 'INR');
+            const captureRazorpayPayment = razorpay.payments.capture(razorpayPaymentId, order.ticket.price, 'INR');
             if (!captureRazorpayPayment) {
                 throw new BadRequestError('Issues while updating the Razorpay payment status as captured');
             }
@@ -96,8 +96,11 @@ router.post('/api/payments', requireAuth, [
             version:        payment.version
         });
 
-        // Send Email to User
-        sendEmail(req.currentUser!.email, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticketTitle} & Price - ${order.ticketPrice}`);
+        // Send Email to Order Owner
+        sendEmail(order.userEmail, `Payment for Order ${payment.orderId} Completed Successfully!`, `Successfully purchased Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
+
+        // Send Email to Ticket Owner
+        sendEmail(order.ticket.userEmail, `Sold Ticket ${order.ticket.title} Successfully!`, `User ${order.userId} successfully purchased Ticket with Title - ${order.ticket.title} & Price - ${order.ticket.price}`);
 
         res.status(201).send({ payment });
     }   

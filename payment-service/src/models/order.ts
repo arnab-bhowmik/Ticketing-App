@@ -1,25 +1,26 @@
 import mongoose from "mongoose";
 import { updateIfCurrentPlugin } from 'mongoose-update-if-current';
 import { OrderStatus } from "@ticketing_org/custom-modules";
+import { TicketDoc } from "./ticket";
 
 // Interface to define the properties the Order Schema has
 interface OrderAttribute {
     id: string,
     userId: string,
+    userEmail: string,
     status: OrderStatus,
     rzpOrderId: string,
-    ticketTitle: string,
-    ticketPrice: number,
+    ticket: TicketDoc,
     version: number
 }
 
 // Interface to define the properties the Order Document has
 interface OrderDoc extends mongoose.Document {
     userId: string,
+    userEmail: string,
     status: OrderStatus,
     rzpOrderId: string,
-    ticketTitle: string,
-    ticketPrice: number,
+    ticket: TicketDoc,
     version: number
 }
 
@@ -33,6 +34,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    userEmail: {
+        type: String,
+        required: true
+    },
     status: {
         type: String,
         required: true,
@@ -42,13 +47,9 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    ticketTitle: {
-        type: String,
-        required: true
-    },
-    ticketPrice: {
-        type: Number,
-        required: true
+    ticket: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Ticket'
     }
 }, {
     // Convert Order schema to JSON and omit/update prperties in the response
@@ -69,10 +70,10 @@ orderSchema.statics.build = (attribute: OrderAttribute) => {
     return new Order({
         _id: attribute.id,
         userId: attribute.userId,
+        userEmail: attribute.userEmail,
         status: attribute.status,
         rzpOrderId: attribute.rzpOrderId,
-        ticketTitle: attribute.ticketTitle,
-        ticketPrice: attribute.ticketPrice,
+        ticket: attribute.ticket,
         version: attribute.version
     });
 }
