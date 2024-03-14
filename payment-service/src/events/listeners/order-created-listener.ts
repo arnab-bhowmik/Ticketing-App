@@ -17,6 +17,10 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
             if (!ticket) {
                 throw new NotFoundError('Ticket Not Found');
             }
+            // Check if the Ticket's version is the same as the incoming event
+            if (ticket.version != data.ticket.version) {
+                throw new BadRequestError(`Ticket record version ${ticket.version} does not match with incoming Order Created Event's reserved ticket version ${data.ticket.version}`);
+            }
             // Skipping any validation checks as those are already handled within the Order Service prior creating the Order!
             // Create the Order 
             const order = Order.build({
