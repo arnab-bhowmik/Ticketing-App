@@ -16,17 +16,25 @@ it('returns an error if the ticket does not exist', async () => {
 });
 
 it('returns an error if the ticket is already reserved', async () => {
+    // Generate a random User Id for Ticket Owner
+    const ticketOwnerId = new mongoose.Types.ObjectId().toHexString();
+    // Generate a random User Id for Order Owner
+    const orderOwnerId = new mongoose.Types.ObjectId().toHexString();
+
     // Create a Ticket which is yet to be associated with an Order
     const ticket = Ticket.build({
         id: new mongoose.Types.ObjectId().toHexString(),
         title: 'concert',
-        price: 200
+        price: 200,
+        userId: ticketOwnerId,
+        userEmail: 'user1@abc.com'
     });
     await ticket.save();
 
     // Create a new Order and associate the ticket with this Order
     const order = Order.build({
-        userId: 'user1@abc.com',
+        userId: orderOwnerId,
+        userEmail: 'user2@abc.com',
         status: OrderStatus.Created,
         expiresAt: new Date(),
         rzpOrderId: razorpayOrderId, 
@@ -39,11 +47,16 @@ it('returns an error if the ticket is already reserved', async () => {
 });
 
 it('reserves a ticket successfully', async () => {
+    // Generate a random User Id for Ticket Owner
+    const ticketOwnerId = new mongoose.Types.ObjectId().toHexString();
+
     // Create a Ticket which is yet to be associated with an Order
     const ticket = Ticket.build({
         id: new mongoose.Types.ObjectId().toHexString(),
         title: 'concert',
-        price: 200
+        price: 200,
+        userId: ticketOwnerId,
+        userEmail: 'user1@abc.com'
     });
     await ticket.save();
 
@@ -52,11 +65,16 @@ it('reserves a ticket successfully', async () => {
 });
 
 it('emits order created event on successful order creation', async () => {
+    // Generate a random User Id for Ticket Owner
+    const ticketOwnerId = new mongoose.Types.ObjectId().toHexString();
+
     // Create a Ticket which is yet to be associated with an Order
     const ticket = Ticket.build({
         id: new mongoose.Types.ObjectId().toHexString(),
         title: 'concert',
-        price: 200
+        price: 200,
+        userId: ticketOwnerId,
+        userEmail: 'user1@abc.com'
     });
     await ticket.save();
 

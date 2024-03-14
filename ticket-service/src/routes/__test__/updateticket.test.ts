@@ -8,14 +8,14 @@ import { connection } from '../../index';
 
 it('returns status of 404 if the ticket is not found', async () => {
     // Create a random id which doesn't correspond to an existing Ticket
-    const id = new mongoose.Types.ObjectId().toHexString();
-    await request(app).put(`/api/tickets/${id}`).set('Cookie', global.signin()).send({ title: 'Ticket_1', price: 100 }).expect(404);
+    const ticketId = new mongoose.Types.ObjectId().toHexString();
+    await request(app).put(`/api/tickets/${ticketId}`).set('Cookie', global.signin()).send({ title: 'Ticket_1', price: 100 }).expect(404);
 });
 
 it('returns status of 401 if the user is not authenticated', async () => {
     // Create a random id which doesn't correspond to an existing Ticket
-    const id = new mongoose.Types.ObjectId().toHexString();
-    await request(app).put(`/api/tickets/${id}`).send({ title: 'Ticket_1', price: 100 }).expect(401);
+    const ticketId = new mongoose.Types.ObjectId().toHexString();
+    await request(app).put(`/api/tickets/${ticketId}`).send({ title: 'Ticket_1', price: 100 }).expect(401);
 });
 
 it('returns status of 401 if the user is not the ticket owner', async () => {

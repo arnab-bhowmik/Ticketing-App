@@ -8,8 +8,17 @@ import { connection } from '../../index';
 // ------------ Test Scenarios for updating status for a specific Order to Cancelled ------------
 
 it('returns an error if a different user tries to fetch another user order for marking it deleted', async () => {
+    // Generate a random User Id for Ticket Owner
+    const ticketOwnerId = new mongoose.Types.ObjectId().toHexString();
+
     // Create a Concert Ticket 
-    const ticket = Ticket.build({ id: new mongoose.Types.ObjectId().toHexString(), title: 'concert', price: 200 });
+    const ticket = Ticket.build({ 
+        id: new mongoose.Types.ObjectId().toHexString(), 
+        title: 'concert', 
+        price: 200,
+        userId: ticketOwnerId,
+        userEmail: 'user1@abc.com' 
+    });
     await ticket.save();
 
     // Create Two Users
@@ -24,8 +33,17 @@ it('returns an error if a different user tries to fetch another user order for m
 });
 
 it('marks a particular Order as Cancelled', async () => {
+    // Generate a random User Id for Ticket Owner
+    const ticketOwnerId = new mongoose.Types.ObjectId().toHexString();
+
     // Create a Concert Ticket 
-    const ticket = Ticket.build({ id: new mongoose.Types.ObjectId().toHexString(), title: 'concert', price: 200 });
+    const ticket = Ticket.build({ 
+        id: new mongoose.Types.ObjectId().toHexString(), 
+        title: 'concert', 
+        price: 200,
+        userId: ticketOwnerId,
+        userEmail: 'user1@abc.com'
+    });
     await ticket.save();
 
     // Create a User
@@ -43,8 +61,17 @@ it('marks a particular Order as Cancelled', async () => {
 });
 
 it('emits order cancelled event on successful order cancellation', async () => {
+    // Generate a random User Id for Ticket Owner
+    const ticketOwnerId = new mongoose.Types.ObjectId().toHexString();
+
     // Create a Concert Ticket 
-    const ticket = Ticket.build({ id: new mongoose.Types.ObjectId().toHexString(), title: 'concert', price: 200 });
+    const ticket = Ticket.build({ 
+        id: new mongoose.Types.ObjectId().toHexString(), 
+        title: 'concert', 
+        price: 200,
+        userId: ticketOwnerId,
+        userEmail: 'user1@abc.com'
+    });
     await ticket.save();
 
     // Create a User
