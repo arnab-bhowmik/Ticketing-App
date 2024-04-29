@@ -1,4 +1,5 @@
 import 'bootstrap/dist/css/bootstrap.css';
+import { NextUIProvider } from '@nextui-org/react';
 import buildClient from "../api/build-client";
 import Header from '../components/header';
 
@@ -7,7 +8,9 @@ const AppComponent = ({ Component, pageProps, currentUser }) => {
         <div>
             <Header currentUser={currentUser} />
             <div className="container">
+              <NextUIProvider>
                 <Component currentUser={currentUser} {...pageProps} />
+              </NextUIProvider>
             </div>
         </div>
     );
