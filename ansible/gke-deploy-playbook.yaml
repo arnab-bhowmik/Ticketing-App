@@ -58,6 +58,8 @@
         sleep 120
         kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
         sleep 30
+        kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/03-hostpath-storageclass.yaml
+        sleep 30
         kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/01-cert-manager.yaml
         sleep 30
         kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/02-rabbitmq-messaging-topology-operator.yaml
