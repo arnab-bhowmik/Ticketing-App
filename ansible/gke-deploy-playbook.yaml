@@ -3,24 +3,23 @@
   hosts: jenkins_agent_node
   gather_facts: false
   environment:
-    GCLOUD_KEY: "{{ GCLOUD_KEY }}"
-    GCP_PROJECT: "{{ GCP_PROJECT }}"
-    K8S_CLUSTER_NAME:   "{{ K8S_CLUSTER_NAME }}"
-    K8S_CLUSTER_ZONE:   "{{ K8S_CLUSTER_ZONE }}"
-    JWT_KEY:            "{{ JWT_KEY }}"
-    RABBITMQ_USERNAME:  "{{ RABBITMQ_USERNAME }}"
-    RABBITMQ_PASSWORD:  "{{ RABBITMQ_PASSWORD }}"
-    RAZORPAY_KEY_ID:    "{{ RAZORPAY_KEY_ID }}"
-    RAZORPAY_KEY_SECRET: "{{ RAZORPAY_KEY_SECRET }}"
-    MAILJET_API_KEY:    "{{ MAILJET_API_KEY }}"
-    MAILJET_API_SECRET: "{{ MAILJET_API_SECRET }}"
+    GCLOUD_KEY:           "{{ GCLOUD_KEY }}"
+    GCP_PROJECT:          "{{ GCP_PROJECT }}"
+    K8S_CLUSTER_NAME:     "{{ K8S_CLUSTER_NAME }}"
+    K8S_CLUSTER_ZONE:     "{{ K8S_CLUSTER_ZONE }}"
+    K8S_NAMESPACE_NGX:    "{{ K8S_NAMESPACE_NGX }}"
+    K8S_NAMESPACE_APP:    "{{ K8S_NAMESPACE_APP }}"
+    K8S_NAMESPACE_MQ:     "{{ K8S_NAMESPACE_MQ }}"
+    K8S_NAMESPACE_CA:     "{{ K8S_NAMESPACE_CA }}"
+    JWT_KEY:              "{{ JWT_KEY }}"
+    RABBITMQ_USERNAME:    "{{ RABBITMQ_USERNAME }}"
+    RABBITMQ_PASSWORD:    "{{ RABBITMQ_PASSWORD }}"
+    RAZORPAY_KEY_ID:      "{{ RAZORPAY_KEY_ID }}"
+    RAZORPAY_KEY_SECRET:  "{{ RAZORPAY_KEY_SECRET }}"
+    MAILJET_API_KEY:      "{{ MAILJET_API_KEY }}"
+    MAILJET_API_SECRET:   "{{ MAILJET_API_SECRET }}"
     APP_NOTIFICATION_SENDER_EMAIL: "{{ APP_NOTIFICATION_SENDER_EMAIL }}"
-    # MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
-    # MODULE_NAMESPACE_2: "{{ MODULE_NAMESPACE_2 }}"
-    KUBERNETES_NAMESPACE_NGX: "{{ KUBERNETES_NAMESPACE_NGX }}"
-    KUBERNETES_NAMESPACE_APP: "{{ KUBERNETES_NAMESPACE_APP }}"
-    KUBERNETES_NAMESPACE_MQ: "{{ KUBERNETES_NAMESPACE_MQ }}"
-    KUBERNETES_NAMESPACE_CA: "{{ KUBERNETES_NAMESPACE_CA }}"
+    
     PROJ_DIR: "{{ PROJ_DIR }}"
   
   tasks:
@@ -30,27 +29,20 @@
     - name: Configure kubectl to use the new cluster
       command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
 
-    # - name: Deploy Ingress Controller via Skaffold
-    #   command: skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
-    #   register: skaffold_result
-    #   args:
-    #     chdir: "{{ PROJ_DIR }}"
-
-    # - name: Debug Skaffold Output
-    #   debug:
-    #     var: skaffold_result
-
     - name: Create Application Namespace
       command: kubectl apply -f ./infra/k8s/pre-requisite-manifests/01-namespace --recursive
       args:
         chdir: "{{ PROJ_DIR }}"
 
     - name: Create K8s Secrets
-      command: kubectl create secret generic jwt-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=JWT_KEY="${JWT_KEY}"
-      command: kubectl create secret generic rabbitmq-user-imported-creds-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=username="${RABBITMQ_USERNAME}" --from-literal=password="${RABBITMQ_PASSWORD}"
-      command: kubectl create secret generic razorpay-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID}" --from-literal=RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET}"
-      command: kubectl create secret generic mailjet-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=MAILJET_API_KEY="${MAILJET_API_KEY}" --from-literal=MAILJET_API_SECRET="${MAILJET_API_SECRET}"
-      command: kubectl create secret generic app-notification-sender-email-address-secret 	-n ${KUBERNETES_NAMESPACE_APP} --from-literal=APP_NOTIFICATION_SENDER_EMAIL="${APP_NOTIFICATION_SENDER_EMAIL}"
+      shell: |
+        kubectl create secret generic jwt-secret -n ${K8S_NAMESPACE_APP} --from-literal=JWT_KEY="${JWT_KEY}"
+        kubectl create secret generic rabbitmq-user-imported-creds-secret -n ${K8S_NAMESPACE_APP} --from-literal=username="${RABBITMQ_USERNAME}" --from-literal=password="${RABBITMQ_PASSWORD}"
+        kubectl create secret generic razorpay-secret -n ${K8S_NAMESPACE_APP} --from-literal=RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID}" --from-literal=RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET}"
+        kubectl create secret generic mailjet-secret -n ${K8S_NAMESPACE_APP} --from-literal=MAILJET_API_KEY="${MAILJET_API_KEY}" --from-literal=MAILJET_API_SECRET="${MAILJET_API_SECRET}"
+        kubectl create secret generic app-notification-sender-email-address-secret 	-n ${K8S_NAMESPACE_APP} --from-literal=APP_NOTIFICATION_SENDER_EMAIL="${APP_NOTIFICATION_SENDER_EMAIL}"
+      args:
+        chdir: "{{ PROJ_DIR }}"
 
     - name: Deploy Pre-Requisites Kubernetes Deployment Manifests
       shell: |
@@ -76,7 +68,7 @@
         kubectl apply -f ./infra/k8s/application-manifests/01-database --recursive
         sleep 30
         kubectl apply -f ./infra/k8s/application-manifests --recursive
-        sleep 60
+        sleep 30
         kubectl apply -f ./infra/k8s/application-manifests-prod --recursive
       args:
         chdir: "{{ PROJ_DIR }}"
