@@ -5,11 +5,22 @@
   environment:
     GCLOUD_KEY: "{{ GCLOUD_KEY }}"
     GCP_PROJECT: "{{ GCP_PROJECT }}"
-    JWT_KEY: "{{ JWT_KEY }}"
-    K8S_CLUSTER_NAME: "{{ K8S_CLUSTER_NAME }}"
-    K8S_CLUSTER_ZONE: "{{ K8S_CLUSTER_ZONE }}"
-    MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
-    MODULE_NAMESPACE_2: "{{ MODULE_NAMESPACE_2 }}"
+    K8S_CLUSTER_NAME:   "{{ K8S_CLUSTER_NAME }}"
+    K8S_CLUSTER_ZONE:   "{{ K8S_CLUSTER_ZONE }}"
+    JWT_KEY:            "{{ JWT_KEY }}"
+    RABBITMQ_USERNAME:  "{{ RABBITMQ_USERNAME }}"
+    RABBITMQ_PASSWORD:  "{{ RABBITMQ_PASSWORD }}"
+    RAZORPAY_KEY_ID:    "{{ RAZORPAY_KEY_ID }}"
+    RAZORPAY_KEY_SECRET: "{{ RAZORPAY_KEY_SECRET }}"
+    MAILJET_API_KEY:    "{{ MAILJET_API_KEY }}"
+    MAILJET_API_SECRET: "{{ MAILJET_API_SECRET }}"
+    APP_NOTIFICATION_SENDER_EMAIL: "{{ APP_NOTIFICATION_SENDER_EMAIL }}"
+    # MODULE_NAMESPACE_1: "{{ MODULE_NAMESPACE_1 }}"
+    # MODULE_NAMESPACE_2: "{{ MODULE_NAMESPACE_2 }}"
+    KUBERNETES_NAMESPACE_NGX: "{{ KUBERNETES_NAMESPACE_NGX }}"
+    KUBERNETES_NAMESPACE_APP: "{{ KUBERNETES_NAMESPACE_APP }}"
+    KUBERNETES_NAMESPACE_MQ: "{{ KUBERNETES_NAMESPACE_MQ }}"
+    KUBERNETES_NAMESPACE_CA: "{{ KUBERNETES_NAMESPACE_CA }}"
     PROJ_DIR: "{{ PROJ_DIR }}"
   
   tasks:
@@ -19,29 +30,51 @@
     - name: Configure kubectl to use the new cluster
       command: gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
 
-    - name: Deploy Ingress Controller via Skaffold
-      command: skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
-      register: skaffold_result
+    # - name: Deploy Ingress Controller via Skaffold
+    #   command: skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
+    #   register: skaffold_result
+    #   args:
+    #     chdir: "{{ PROJ_DIR }}"
+
+    # - name: Debug Skaffold Output
+    #   debug:
+    #     var: skaffold_result
+
+    - name: Create Application Namespace
+      command: kubectl apply -f ./infra/k8s/pre-requisite-manifests/01-namespace --recursive
       args:
         chdir: "{{ PROJ_DIR }}"
 
-    - name: Debug Skaffold Output
-      debug:
-        var: skaffold_result
+    - name: Create K8s Secrets
+      command: kubectl create secret generic jwt-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=JWT_KEY="${JWT_KEY}"
+      command: kubectl create secret generic rabbitmq-user-imported-creds-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=username="${RABBITMQ_USERNAME}" --from-literal=password="${RABBITMQ_PASSWORD}"
+      command: kubectl create secret generic razorpay-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID}" --from-literal=RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET}"
+      command: kubectl create secret generic mailjet-secret -n ${KUBERNETES_NAMESPACE_APP} --from-literal=MAILJET_API_KEY="${MAILJET_API_KEY}" --from-literal=MAILJET_API_SECRET="${MAILJET_API_SECRET}"
+      command: kubectl create secret generic app-notification-sender-email-address-secret 	-n ${KUBERNETES_NAMESPACE_APP} --from-literal=APP_NOTIFICATION_SENDER_EMAIL="${APP_NOTIFICATION_SENDER_EMAIL}"
 
-    - name: Create Application Namespace
-      command: kubectl apply -f ./namespace/*
-      args:
-        chdir: "{{ PROJ_DIR }}/infra/k8s"
-
-    - name: Create JWT Secret
-      command: kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
-
-    - name: Deploy Updated Kubernetes Manifests
+    - name: Deploy Pre-Requisites Kubernetes Deployment Manifests
       shell: |
-        kubectl apply -f ./client/*
-        kubectl apply -f ./database/*
-        kubectl apply -f ./auth-service/*
-        kubectl apply -f ./ingress/*
+        kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/01-rabbitmq-kubernetes-cluster-operator.yaml
+        sleep 120
+        kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
+        sleep 30
+        kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/01-cert-manager.yaml
+        sleep 30
+        kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/02-rabbitmq-messaging-topology-operator.yaml
+        sleep 30
+        kubectl apply -f infra/k8s/pre-requisite-manifests/04-rabbitmq-resources --recursive
+        sleep 30
+        kubectl apply -f infra/k8s/pre-requisite-manifests-prod/ingress-nginx-controller.yaml
+        sleep 30
       args:
-        chdir: "{{ PROJ_DIR }}/infra/k8s"
+        chdir: "{{ PROJ_DIR }}"
+
+    - name: Deploy Updated Kubernetes Deployment Manifests
+      shell: |
+        kubectl apply -f ./infra/k8s/application-manifests/01-database --recursive
+        sleep 30
+        kubectl apply -f ./infra/k8s/application-manifests --recursive
+        sleep 60
+        kubectl apply -f ./infra/k8s/application-manifests-prod --recursive
+      args:
+        chdir: "{{ PROJ_DIR }}"
