@@ -1,7 +1,9 @@
-
 ## Switch to Root user
 echo "${SUDO_PASSWORD}" | sudo -SE su root
 whoami
+
+## Check Linux Distribution
+OS=$(lsb_release -a)
 
 ## Install basic utilities
 sudo apt-get update
@@ -17,7 +19,7 @@ else
     echo "Installing NodeJS & NPM"
     # Add NodeJS official GPG key
     sudo apt-get update
-    sudo apt-get install ca-certificates curl gnupg
+    sudo apt-get install -y ca-certificates curl gnupg
     sudo mkdir -p /etc/apt/keyrings
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
     sudo chmod a+r /etc/apt/keyrings/nodesource.gpg
@@ -30,7 +32,11 @@ else
     sudo apt-get update
 
     # Install the latest version
-    sudo apt-get install nodejs
+    sudo apt-get install -y nodejs
+
+    # Test to ensure the version installed is as mentioned
+    node --version
+    npm --version 
 fi
 
 
@@ -54,26 +60,43 @@ then
 else
     echo "Installing Docker"
     # Remove any previously installed unofficial Docker packages
-    for pkg in docker.io docker-doc docker-compose containerd runc; do 
+    for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do 
         sudo apt-get remove $pkg 
     done
     
     # Add Docker official GPG key
     sudo apt-get update
-    sudo apt-get install ca-certificates curl gnupg
+    sudo apt-get install -y ca-certificates curl gnupg
     sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+    if [ "$OS" == "Ubuntu" ]; then
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        
+        # Add the repository to Apt sources
+        echo \
+            "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+            sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     
-    # Add the repository to Apt sources
-    echo \
-        "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-        "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    elif [ "$OS" == "Debian" ]; then
+        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add the repository to Apt sources
+        echo \
+            "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+            "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+            sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            
+    else
+        # Other distributions
+        echo "This is a Linux distribution other than Ubuntu or Debian"
+    fi
     sudo apt-get update
     
     # Install the latest version
-    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     
     # Test the installation
     sudo docker run hello-world
@@ -154,7 +177,7 @@ else
     echo "Installing Google Cloud SDK"
     # Update the apt package & install necessary packages 
     sudo apt-get update
-    sudo apt-get install apt-transport-https ca-certificates gnupg curl sudo
+    sudo apt-get install -y apt-transport-https ca-certificates gnupg curl sudo
 
     ########
     ## Add the appropriate Google Cloud apt repository. Only one of the below options shall be executed.
