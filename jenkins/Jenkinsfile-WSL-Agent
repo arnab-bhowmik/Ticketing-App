@@ -2,16 +2,18 @@ pipeline {
     agent any
 
     environment {
-        MODULE_NAMESPACE_1  = 'ingress-nginx'
-        MODULE_NAMESPACE_2  = 'ticketing-app'
+        K8S_NAMESPACE_NGX = 'ingress-nginx'
+        K8S_NAMESPACE_APP = 'ticketing-app'
+        K8S_NAMESPACE_MQ  = 'rabbitmq-system'
+        K8S_NAMESPACE_CA  = 'cert-manager'
         
         GCP_PROJECT         = 'ticketing-app-prod' 
         GCP_REGION          = 'us-east1'
 
         K8S_CLUSTER_NAME    = 'ticketing-app-k8-cluster' 
         K8S_CLUSTER_ZONE    = 'us-east1-c'
-        K8S_NODE_TYPE       = 'n1-standard-1'
-        K8S_NODE_COUNT      = 1
+        K8S_NODE_TYPE       = 'n1-standard-2'
+        K8S_NODE_COUNT      = 3
 
         KUBECTL_DEV_CONTEXT = 'docker-desktop'
         DOCKER_IMAGE_NAMES  = ' '
@@ -21,180 +23,190 @@ pipeline {
     }
 
     stages {
-        stage('Install required tools on Agent Node') {
-            steps {
-                withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
-                    sh '''
-                        ## Switch to Root user
-                        echo "${SUDO_PASSWORD}" | sudo -SE su root
-                        whoami
+        // stage('Install required tools on Agent Node') {
+        //     steps {
+        //         withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
+        //             sh '''
+        //                 ## Switch to Root user
+        //                 echo "${SUDO_PASSWORD}" | sudo -SE su root
+        //                 whoami
                         
-                        ## Install basic utilities
-                        sudo apt-get update
-                        sudo apt-get install -y curl jq
+        //                 ## Install basic utilities
+        //                 sudo apt-get update
+        //                 sudo apt-get install -y curl jq
+
+        //                 ## Install Git...
+        //                 git_version_output=$(git version 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Git is already installed"
+        //                 else
+        //                     echo "Installing Git"
+        //                     sudo apt-get install git
+        //                 fi
                         
-                        ## Install Skaffold...
-                        skaffold_version_output=$(skaffold version 2>&1)
-                        if [ $? -eq 0 ]
-                        then
-                            echo "Skaffold is already installed"
-                        else
-                            echo "Installing Skaffold"
-                            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
-                            sudo install skaffold /usr/local/bin/
-                        fi
+        //                 ## Install Skaffold...
+        //                 skaffold_version_output=$(skaffold version 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Skaffold is already installed"
+        //                 else
+        //                     echo "Installing Skaffold"
+        //                     curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+        //                     sudo install skaffold /usr/local/bin/
+        //                 fi
                         
 
-                        ## Install Docker...
-                        docker_version_output=$(docker --version 2>&1)
-                        if [ $? -eq 0 ]
-                        then
-                            echo "Docker is already installed"
-                        else
-                            echo "Installing Docker"
-                            # Remove any previously installed unofficial Docker packages
-                            for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
-                              sudo apt-get remove $pkg 
-                            done
+        //                 ## Install Docker...
+        //                 docker_version_output=$(docker --version 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Docker is already installed"
+        //                 else
+        //                     echo "Installing Docker"
+        //                     # Remove any previously installed unofficial Docker packages
+        //                     for pkg in docker.io docker-doc docker-compose containerd runc; do 
+        //                       sudo apt-get remove $pkg 
+        //                     done
                             
-                            # Add Docker official GPG key
-                            sudo apt-get update
-                            sudo apt-get install ca-certificates curl gnupg
-                            sudo install -m 0755 -d /etc/apt/keyrings
-                            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-                            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        //                     # Add Docker official GPG key
+        //                     sudo apt-get update
+        //                     sudo apt-get install ca-certificates curl gnupg
+        //                     sudo install -m 0755 -d /etc/apt/keyrings
+        //                     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        //                     sudo chmod a+r /etc/apt/keyrings/docker.gpg
                             
-                            # Add the repository to Apt sources
-                            echo \
-                              "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-                              "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-                              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                            sudo apt-get update
+        //                     # Add the repository to Apt sources
+        //                     echo \
+        //                       "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        //                       "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+        //                       sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        //                     sudo apt-get update
                             
-                            # Install the latest version
-                            sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        //                     # Install the latest version
+        //                     sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
                             
-                            # Test the installation
-                            sudo docker run hello-world
-                        fi
+        //                     # Test the installation
+        //                     sudo docker run hello-world
+        //                 fi
                         
                             
-                        ## Install Kubectl...
-                        kubectl_version_output=$(kubectl version --client 2>&1)
-                        if [ $? -eq 0 ]
-                        then
-                            echo "Kubectl is already installed"
-                        else
-                            echo "Installing Kubectl"
-                            # Update the apt package index and install packages needed to use the Kubernetes apt repository
-                            sudo apt-get update
-                            sudo apt-get install -y apt-transport-https ca-certificates
+        //                 ## Install Kubectl...
+        //                 kubectl_version_output=$(kubectl version --client 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Kubectl is already installed"
+        //                 else
+        //                     echo "Installing Kubectl"
+        //                     # Update the apt package index and install packages needed to use the Kubernetes apt repository
+        //                     sudo apt-get update
+        //                     sudo apt-get install -y apt-transport-https ca-certificates
                             
-                            # Download the public signing key for the Kubernetes package repositories
-                            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        //                     # Download the public signing key for the Kubernetes package repositories
+        //                     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
                             
-                            # Add the appropriate Kubernetes apt repository. This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
-                            echo \
-                            "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | \
-                            sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+        //                     # Add the appropriate Kubernetes apt repository. This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+        //                     echo \
+        //                     "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | \
+        //                     sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
                             
-                            # Finally install kubectl
-                            sudo apt-get update
-                            sudo apt-get install -y kubectl
+        //                     # Finally install kubectl
+        //                     sudo apt-get update
+        //                     sudo apt-get install -y kubectl
                             
-                            # Test to ensure the version installed is as mentioned
-                            kubectl version --client
+        //                     # Test to ensure the version installed is as mentioned
+        //                     kubectl version --client
                             
-                            # Verify kubectl configuration by acesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
-                            kubectl cluster-info
-                        fi
+        //                     # Verify kubectl configuration by acesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
+        //                     kubectl cluster-info
+        //                 fi
 
 
-                        ## Install Ansible...
-                        ansible_version_output=$(ansible --version 2>&1)
-                        if [ $? -eq 0 ]
-                        then
-                            echo "Ansible is already installed"
-                        else
-                            echo "Installing Ansible"
-                            # Update the apt package & install necessary packages 
-                            sudo apt-get update
-                            sudo apt-get install -y ansible
-                        fi
+        //                 ## Install Ansible...
+        //                 ansible_version_output=$(ansible --version 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Ansible is already installed"
+        //                 else
+        //                     echo "Installing Ansible"
+        //                     # Update the apt package & install necessary packages 
+        //                     sudo apt-get update
+        //                     sudo apt-get install -y ansible
+        //                 fi
 
 
-                        ## Install Terraform...
-                        terraform_version_output=$(terraform --version 2>&1)
-                        if [ $? -eq 0 ]
-                        then
-                            echo "Terraform is already installed"
-                        else
-                            echo "Installing Terraform"
-                            # Add the HashiCorp GPG key
-                            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        //                 ## Install Terraform...
+        //                 terraform_version_output=$(terraform --version 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Terraform is already installed"
+        //                 else
+        //                     echo "Installing Terraform"
+        //                     # Add the HashiCorp GPG key
+        //                     curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-                            # Add the HashiCorp repository
-                            echo \
-                            "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-                            sudo tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+        //                     # Add the HashiCorp repository
+        //                     echo \
+        //                     "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+        //                     sudo tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
 
-                            # Finally install terraform 
-                            sudo apt-get update
-                            sudo apt-get install -y terraform
-                        fi
+        //                     # Finally install terraform 
+        //                     sudo apt-get update
+        //                     sudo apt-get install -y terraform
+        //                 fi
 
 
-                        ## Install Google Cloud SDK...
-                        gcloud_version_output=$(gcloud version 2>&1)
-                        if [ $? -eq 0 ]
-                        then
-                            echo "Google Cloud SDK is already installed"
-                        else
-                            echo "Installing Google Cloud SDK"
-                            # Update the apt package & install necessary packages 
-                            sudo apt-get update
-                            sudo apt-get install apt-transport-https ca-certificates gnupg curl sudo
+        //                 ## Install Google Cloud SDK...
+        //                 gcloud_version_output=$(gcloud version 2>&1)
+        //                 if [ $? -eq 0 ]
+        //                 then
+        //                     echo "Google Cloud SDK is already installed"
+        //                 else
+        //                     echo "Installing Google Cloud SDK"
+        //                     # Update the apt package & install necessary packages 
+        //                     sudo apt-get update
+        //                     sudo apt-get install apt-transport-https ca-certificates gnupg curl sudo
 
-                            ########
-                            ## Add the appropriate Google Cloud apt repository. Only one of the below options shall be executed.
-                            ########
+        //                     ########
+        //                     ## Add the appropriate Google Cloud apt repository. Only one of the below options shall be executed.
+        //                     ########
 
-                            # If your distribution supports the signed-by option, run the following command
-                            echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+        //                     # If your distribution supports the signed-by option, run the following command
+        //                     echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
-                            # If your distribution doesn't support the signed-by option, run the following command
-                            echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+        //                     # If your distribution doesn't support the signed-by option, run the following command
+        //                     echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
-                            ########
-                            ## Import the Google Cloud public key. Only one of the below options shall be executed.
-                            ########
-                            # If your distribution's apt-key command supports the --keyring argument, run the following command
-                            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+        //                     ########
+        //                     ## Import the Google Cloud public key. Only one of the below options shall be executed.
+        //                     ########
+        //                     # If your distribution's apt-key command supports the --keyring argument, run the following command
+        //                     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
 
-                            # If your distribution's apt-key command doesn't support the --keyring argument, run the following command
-                            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        //                     # If your distribution's apt-key command doesn't support the --keyring argument, run the following command
+        //                     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
-                            # If your distribution (Debian 11+ or Ubuntu 21.10+) doesn't support apt-key, run the following command
-                            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc
+        //                     # If your distribution (Debian 11+ or Ubuntu 21.10+) doesn't support apt-key, run the following command
+        //                     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc
 
-                            # Finally install Google Cloud SDK
-                            sudo apt-get update
-                            sudo apt-get install -y google-cloud-cli
+        //                     # Finally install Google Cloud SDK
+        //                     sudo apt-get update
+        //                     sudo apt-get install -y google-cloud-cli
 
-                            # Test to ensure the version installed is as mentioned
-                            gcloud version 
+        //                     # Test to ensure the version installed is as mentioned
+        //                     gcloud version 
 
-                            # Following commands to be executed outside of this Jenkinsfile for initializing & configuring Google Cloud SDK
-                            # gcloud auth login
-                            # gcloud init
-                        fi
+        //                     # Following commands to be executed outside of this Jenkinsfile for initializing & configuring Google Cloud SDK
+        //                     # gcloud auth login
+        //                     # gcloud init
+        //                 fi
 
-                        ## Switch back to default user
-                        exit
-                    '''
-                }                
-            }
-        }
+        //                 ## Switch back to default user
+        //                 exit
+        //             '''
+        //         }                
+        //     }
+        // }
         
         stage('Checkout Git Repo') {
             steps {
@@ -205,12 +217,32 @@ pipeline {
         
         stage('Install NPM Dependencies') {
             steps {
+                dir("${env.WORKSPACE}/client"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
                 dir("${env.WORKSPACE}/auth-service"){
                     echo "Current Directory is:"
                     sh "pwd"
                     sh 'npm install'
                 }
-                dir("${env.WORKSPACE}/client"){
+                dir("${env.WORKSPACE}/ticket-service"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
+                dir("${env.WORKSPACE}/order-service"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
+                dir("${env.WORKSPACE}/expiration-service"){
+                    echo "Current Directory is:"
+                    sh "pwd"
+                    sh 'npm install'
+                }
+                dir("${env.WORKSPACE}/payment-service"){
                     echo "Current Directory is:"
                     sh "pwd"
                     sh 'npm install'
@@ -226,8 +258,8 @@ pipeline {
         stage('Deploy Application on Local Kubernetes Cluster') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
+                    withCredentials([string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
+                        withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
                             dir("${env.WORKSPACE}"){
                                 echo "Current Directory is:"
                                 sh "pwd"
@@ -239,32 +271,83 @@ pipeline {
                                     # Verify the kubectl context
                                     kubectl config current-context
                                     
-                                    # Deploy the ingress-nginx controller on Kubernetes cluster via Skaffold
-                                    skaffold deploy --profile dev --module ${MODULE_NAMESPACE_1}
-                                    
-                                    sleep 20
-                                    echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
-                                    kubectl get deployment  -n ${MODULE_NAMESPACE_1}
-                                    kubectl get pods        -n ${MODULE_NAMESPACE_1}
-                                    kubectl get services    -n ${MODULE_NAMESPACE_1}
-                                    
                                     # Create the application namespace
-                                    kubectl create namespace ${MODULE_NAMESPACE_2}
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests/01-namespace --recursive
                                     
+                                    ############################### K8s SECRETS ###############################
                                     # Create a JWT Secret to be used for Authentication
-                                    kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
+                                    kubectl create secret generic jwt-secret -n ${K8S_NAMESPACE_APP} --from-literal=JWT_KEY="${JWT_KEY}"
+
+                                    # Create a custom RabbitMQ User Secret to be used for authenticating services to the RabbitMQ Broker
+                                    kubectl create secret generic rabbitmq-user-imported-creds-secret -n ${K8S_NAMESPACE_APP} --from-literal=username="${RABBITMQ_USERNAME}" --from-literal=password="${RABBITMQ_PASSWORD}"
+
+                                    # Create a custom Razorpay API Key Secret to be used for authenticating services to the Razorpay Payment Gateway
+                                    kubectl create secret generic razorpay-secret -n ${K8S_NAMESPACE_APP} --from-literal=RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID}" --from-literal=RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET}"
                                     
+                                    # Create a custom MailJet API Key Secret to be used for authenticating services to the MailJet Server
+                                    kubectl create secret generic mailjet-secret -n ${K8S_NAMESPACE_APP} --from-literal=MAILJET_API_KEY="${MAILJET_API_KEY}" --from-literal=MAILJET_API_SECRET="${MAILJET_API_SECRET}"
+                                    
+                                    # Create a custom Secret to store the Email address for sending notifications to Users
+                                    kubectl create secret generic app-notification-sender-email-address-secret 	-n ${K8S_NAMESPACE_APP} --from-literal=APP_NOTIFICATION_SENDER_EMAIL="${APP_NOTIFICATION_SENDER_EMAIL}"
+                                    
+                                    ############################### PRE-REQUISITES ###############################
+                                    # Deploy the RabbitMQ Cluster Operator
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/01-rabbitmq-kubernetes-cluster-operator.yaml
+
+                                    sleep 120
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_MQ}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_MQ}
+
+                                    # Deploy the RabbitMQ Cluster
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
+                                    
+                                    sleep 30
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_APP}
+
+                                    # Deploy the Cert Manager
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/01-cert-manager.yaml
+                                    
+                                    sleep 30
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_CA}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_CA}
+
+                                    # Deploy the RabbitMQ Messaging Topology Operator
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/02-rabbitmq-messaging-topology-operator.yaml
+
+                                    sleep 30
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_APP}
+
+                                    # Deploy the RabbitMQ Cluster Resources
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests/04-rabbitmq-resources --recursive
+
+                                    sleep 30
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_APP}
+
+                                    # Deploy the ingress-nginx controller
+                                    kubectl apply -f infra/k8s/pre-requisite-manifests-dev/ingress-nginx-controller.yaml
+                                    
+                                    sleep 30
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_NGX}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_NGX}
+
+                                    ############################### APPLICATION ###############################
                                     # Build the Application Docker Images via Skaffold
-                                    skaffold build --profile dev --module ${MODULE_NAMESPACE_2} --file-output=build_artifacts.json
+                                    skaffold build --profile dev --module ${K8S_NAMESPACE_APP} --file-output=build_artifacts.json
                                     
                                     # Deploy the built artifacts on Kubernetes cluster via Skaffold
-                                    skaffold deploy --profile dev --module ${MODULE_NAMESPACE_2} --build-artifacts=build_artifacts.json
-                                    
-                                    sleep 20
-                                    echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
-                                    kubectl get deployment  -n ${MODULE_NAMESPACE_2}
-                                    kubectl get pods        -n ${MODULE_NAMESPACE_2}
-                                    kubectl get services    -n ${MODULE_NAMESPACE_2}
+                                    skaffold deploy --profile dev --module ${K8S_NAMESPACE_APP} --build-artifacts=build_artifacts.json
+
+                                    # The App Service pods might have issues connecting to their corresponding DB pods, hence scaling down and up again
+                                    kubectl scale deployment auth-deployment order-deployment ticket-deployment expiration-deployment payment-deployment -n ${K8S_NAMESPACE_APP} --replicas=0
+                                    sleep 30
+                                    kubectl scale deployment auth-deployment order-deployment ticket-deployment expiration-deployment payment-deployment -n ${K8S_NAMESPACE_APP} --replicas=1
+
+                                    sleep 30
+                                    echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+                                    kubectl get all  -n ${K8S_NAMESPACE_APP}
                                 '''
                             }
                         }
@@ -273,56 +356,86 @@ pipeline {
             }
         }
         
-        stage('Test APIs for User SignUp/SignIn/SignOut & Authentication') {
-            steps {
-                dir("${env.WORKSPACE}/auth-service"){
-                    echo "Current Directory is:"
-                    sh "pwd"
-                    sh 'npm test'
-                }
-            }
-        }
-        
-        // stage('Push Images to Docker Hub') {
+        // stage('Test APIs for Authentication Service - User SignUp/SignIn/SignOut/View') {
         //     steps {
-        //         script {
-        //             withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-        //                 withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
-        //                     sh '''
-        //                         docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-
-        //                         for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
-        //                             # Extract the image name and corresponding tag
-        //                             echo "Extracting the image name and corresponding tag..."
-        //                             imageName=$(echo "$item" | jq -r '.imageName')
-        //                             tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
-                                    
-        //                             # Tag the extracted Docker image before pushing to Docker Hub
-        //                             echo "Tagging the extracted Docker image before pushing to Docker Hub"
-        //                             docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
-                                
-        //                             # Push the image to Docker Hub
-        //                             echo "Pushing the image to Docker Hub"
-        //                             docker push $DOCKER_HUB_USERNAME/$imageName:latest
-                                
-        //                             # Print the results & delete the :latest tagged image
-        //                             echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
-        //                             docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
-                                    
-        //                             # Save the image name as environment variable to access later for cleanup
-        //                             updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
-        //                             DOCKER_IMAGE_NAMES=$(echo $updatedArray | sed 's/^[,[:space:]]*//;s/[,[:space:]]*$//')
-        //                             echo "Updated image name list: ${DOCKER_IMAGE_NAMES}"  
-        //                         done
-                                
-        //                         # Store the environment variable in a file to pass it to the next stage
-        //                         echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
-        //                     '''
-        //                 }
-        //             }
+        //         dir("${env.WORKSPACE}/auth-service"){
+        //             echo "Current Directory is:"
+        //             sh "pwd"
+        //             sh 'npm test'
         //         }
         //     }
         // }
+
+        // stage('Test APIs for Ticket Service - Ticket Create/Update/Delete/View') {
+        //     steps {
+        //         dir("${env.WORKSPACE}/ticket-service"){
+        //             echo "Current Directory is:"
+        //             sh "pwd"
+        //             sh 'npm test'
+        //         }
+        //     }
+        // }
+
+        // stage('Test APIs for Order Service - Order Create/Cancel/View') {
+        //     steps {
+        //         dir("${env.WORKSPACE}/order-service"){
+        //             echo "Current Directory is:"
+        //             sh "pwd"
+        //             sh 'npm test'
+        //         }
+        //     }
+        // }
+
+        // stage('Test APIs for Payment Service - Payment Create') {
+        //     steps {
+        //         dir("${env.WORKSPACE}/payment-service"){
+        //             echo "Current Directory is:"
+        //             sh "pwd"
+        //             sh 'npm test'
+        //         }
+        //     }
+        // }
+        
+        stage('Push Images to Docker Hub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
+                            sh '''
+                                docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+
+                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+                                    # Extract the image name and corresponding tag
+                                    echo "Extracting the image name and corresponding tag..."
+                                    imageName=$(echo "$item" | jq -r '.imageName')
+                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                    
+                                    # Tag the extracted Docker image before pushing to Docker Hub
+                                    echo "Tagging the extracted Docker image before pushing to Docker Hub"
+                                    docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
+                                
+                                    # Push the image to Docker Hub
+                                    echo "Pushing the image to Docker Hub"
+                                    docker push $DOCKER_HUB_USERNAME/$imageName:latest
+                                
+                                    # Print the results & delete the :latest tagged image
+                                    echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
+                                    docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
+                                    
+                                    # Save the image name as environment variable to access later for cleanup
+                                    updatedArray="${DOCKER_IMAGE_NAMES},${imageName}"
+                                    DOCKER_IMAGE_NAMES=$(echo $updatedArray | sed 's/^[,[:space:]]*//;s/[,[:space:]]*$//')
+                                    echo "Updated image name list: ${DOCKER_IMAGE_NAMES}"  
+                                done
+                                
+                                # Store the environment variable in a file to pass it to the next stage
+                                echo "${DOCKER_IMAGE_NAMES}" > docker_image_names.txt
+                            '''
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Push Images to Google Cloud Artifact Registry') {
             steps {
@@ -357,14 +470,30 @@ pipeline {
                                     docker rmi $gcrImage
 
                                     # Replace the image name in the corresponding Kubernetes deployment manifest file
-                                    if echo "$imageName" | grep -q "auth" 
+                                    if echo "$imageName" | grep -q "client" 
                                     then
-                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/auth-service/*.yaml
-                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/auth-service/*.yaml
-                                    elif echo "$imageName" | grep -q "client" 
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/application-manifests/02-client/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/application-manifests/02-client/*.yaml
+                                    elif echo "$imageName" | grep -q "auth-service" 
                                     then
-                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/client/*.yaml
-                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/client/*.yaml
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/application-manifests/03-auth-service/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/application-manifests/03-auth-service/*.yaml
+                                    elif echo "$imageName" | grep -q "ticket-service" 
+                                    then
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/application-manifests/04-ticket-service/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/application-manifests/04-ticket-service/*.yaml
+                                    elif echo "$imageName" | grep -q "order-service" 
+                                    then
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/application-manifests/05-order-service/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/application-manifests/05-order-service/*.yaml
+                                    elif echo "$imageName" | grep -q "expiration-service" 
+                                    then
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/application-manifests/06-expiration-service/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/application-manifests/06-expiration-service/*.yaml
+                                    elif echo "$imageName" | grep -q "payment-service" 
+                                    then
+                                        sed -i "s|image:.*|image: $gcrImage|" infra/k8s/application-manifests/07-payment-service/*.yaml
+                                        sed -i "s|imagePullPolicy:.*|imagePullPolicy: Always|" infra/k8s/application-manifests/07-payment-service/*.yaml
                                     fi
 
                                     # Save the image name as environment variable to access later for cleanup
@@ -385,7 +514,7 @@ pipeline {
         stage('Cleanup Deployment on Local Kubernetes Cluster') {
             steps {
                 script {
-                    withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
+                    withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
                         sh '''                          
                             # Set the Kubernetes context explicitly
                             kubectl config use-context ${KUBECTL_DEV_CONTEXT}
@@ -393,14 +522,39 @@ pipeline {
                             # Verify the kubectl context
                             kubectl config current-context
                         
-                            # Delete the JWT secret
-                            kubectl delete secret jwt-secret -n ${MODULE_NAMESPACE_2}
+                            ############################### K8s SECRETS ###############################
+                            # Delete the JWT Secret
+                            kubectl delete secret jwt-secret -n ${K8S_NAMESPACE_APP}
+
+                            # Delete the RabbitMQ User Secret
+                            kubectl delete secret rabbitmq-user-imported-creds-secret -n ${K8S_NAMESPACE_APP}
+
+                            # Delete the Razorpay API Key Secret
+                            kubectl delete secret razorpay-secret -n ${K8S_NAMESPACE_APP}
+
+                            # Delete the MailJet API Key Secret
+                            kubectl delete secret mailjet-secret -n ${K8S_NAMESPACE_APP}
+
+                            # Delete the Notification Email Sender Address Secret
+                            kubectl delete secret app-notification-sender-email-address-secret -n ${K8S_NAMESPACE_APP}
+
+                            ############################### APPLICATION ###############################
+                            # Delete Kubernetes Namespaces 
+                            echo "Cleaning up the deployed applications & services for all kubernetes namespaces..."
+                            kubectl delete namespace ${K8S_NAMESPACE_NGX}
+                            kubectl delete namespace ${K8S_NAMESPACE_APP}
+                            kubectl delete namespace ${K8S_NAMESPACE_MQ}
+                            kubectl delete namespace ${K8S_NAMESPACE_CA}
                             
-                            # Stop skaffold 
-                            echo "Stopping skaffold to clean up the deployed applications & services for all kubernetes namespaces..."
-                            skaffold delete --profile dev --module ${MODULE_NAMESPACE_1}
-                            skaffold delete --profile dev --module ${MODULE_NAMESPACE_2}
                             sleep 30
+                            echo "Displaying all resources for namespace - ${K8S_NAMESPACE_NGX}"
+                            kubectl get all  -n ${K8S_NAMESPACE_NGX}
+                            echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+                            kubectl get all  -n ${K8S_NAMESPACE_APP}
+                            echo "Displaying all resources for namespace - ${K8S_NAMESPACE_MQ}"
+                            kubectl get all  -n ${K8S_NAMESPACE_MQ}
+                            echo "Displaying all resources for namespace - ${K8S_NAMESPACE_CA}"
+                            kubectl get all  -n ${K8S_NAMESPACE_CA}
                         '''
                         
                         // Access the environment variable from the previous stage
@@ -480,42 +634,92 @@ pipeline {
         // stage('Deploy Application on Google Cloud Kubernetes Cluster') {
         //     steps {
         //         script {
-        //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-        //                 withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
+        //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
+        //                 withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
         //                     sh '''
         //                         # Authenticate with Google Cloud using a service account key
         //                         gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
         //                         # Set the GKE cluster context
         //                         gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --zone ${K8S_CLUSTER_ZONE} --project ${GCP_PROJECT}
-
-        //                         # Deploy the ingress-nginx controller on Google Cloud Kubernetes Cluster via Skaffold
-        //                         skaffold deploy --profile prod --module ${MODULE_NAMESPACE_1}
-
-        //                         sleep 20
-        //                         echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_1}"
-        //                         kubectl get deployment  -n ${MODULE_NAMESPACE_1}
-        //                         kubectl get pods        -n ${MODULE_NAMESPACE_1}
-        //                         kubectl get services    -n ${MODULE_NAMESPACE_1}
                                 
         //                         # Create the application namespace
-        //                         kubectl apply -f ./infra/k8s/namespace/*
+        //                         kubectl apply -f ./infra/k8s/pre-requisite-manifests/01-namespace --recursive
 
+        //                         ############################### K8s SECRETS ###############################
         //                         # Create a JWT Secret to be used for Authentication
-        //                         kubectl create secret generic jwt-secret -n ${MODULE_NAMESPACE_2} --from-literal=JWT_KEY="${JWT_KEY}"
+        //                         kubectl create secret generic jwt-secret -n ${K8S_NAMESPACE_APP} --from-literal=JWT_KEY="${JWT_KEY}"
 
+        //                         # Create a custom RabbitMQ User Secret to be used for authenticating services to the RabbitMQ Broker
+        //                         kubectl create secret generic rabbitmq-user-imported-creds-secret -n ${K8S_NAMESPACE_APP} --from-literal=username="${RABBITMQ_USERNAME}" --from-literal=password="${RABBITMQ_PASSWORD}"
+
+        //                         # Create a custom Razorpay API Key Secret to be used for authenticating services to the Razorpay Payment Gateway
+        //                         kubectl create secret generic razorpay-secret -n ${K8S_NAMESPACE_APP} --from-literal=RAZORPAY_KEY_ID="${RAZORPAY_KEY_ID}" --from-literal=RAZORPAY_KEY_SECRET="${RAZORPAY_KEY_SECRET}"
+                                    
+        //                         # Create a custom MailJet API Key Secret to be used for authenticating services to the MailJet Server
+        //                         kubectl create secret generic mailjet-secret -n ${K8S_NAMESPACE_APP} --from-literal=MAILJET_API_KEY="${MAILJET_API_KEY}" --from-literal=MAILJET_API_SECRET="${MAILJET_API_SECRET}"
+                                    
+        //                         # Create a custom Secret to store the Email address for sending notifications to Users
+        //                         kubectl create secret generic app-notification-sender-email-address-secret 	-n ${K8S_NAMESPACE_APP} --from-literal=APP_NOTIFICATION_SENDER_EMAIL="${APP_NOTIFICATION_SENDER_EMAIL}"
+
+        //                         ############################### PRE-REQUISITES ###############################
+        //                         # Deploy the RabbitMQ Cluster Operator
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/01-rabbitmq-kubernetes-cluster-operator.yaml
+
+        //                         sleep 120
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_MQ}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_MQ}
+
+        //                         # Deploy the RabbitMQ Cluster
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
+
+        //                         sleep 30
+        //                         # Deploy the StorageClass for use by RabbitMQ Cluster. Strangely this gets auto created for Development K8s Clusters
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/03-hostpath-storageclass.yaml
+                                    
+        //                         sleep 30
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_APP}
+
+        //                         # Deploy the Cert Manager
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/01-cert-manager.yaml
+                                    
+        //                         sleep 30
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_CA}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_CA}
+
+        //                         # Deploy the RabbitMQ Messaging Topology Operator
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests/03-rabbitmq-messaging-topology-operator/02-rabbitmq-messaging-topology-operator.yaml
+
+        //                         sleep 30
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_APP}
+
+        //                         # Deploy the RabbitMQ Cluster Resources
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests/04-rabbitmq-resources --recursive
+
+        //                         sleep 30
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_APP}
+
+        //                         # Deploy the ingress-nginx controller
+        //                         kubectl apply -f infra/k8s/pre-requisite-manifests-prod/ingress-nginx-controller.yaml
+                                    
+        //                         sleep 30
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_NGX}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_NGX}
+
+        //                         ############################### APPLICATION ###############################
         //                         # Deploy the updated kubernetes deployment manifest files on Google Cloud Kubernetes Cluster via kubectl
-        //                         kubectl apply -f ./infra/k8s/client/*
-        //                         kubectl apply -f ./infra/k8s/database/*
-        //                         kubectl apply -f ./infra/k8s/auth-service/*
-        //                         kubectl apply -f ./infra/k8s/ingress/*
+        //                         kubectl apply -f ./infra/k8s/application-manifests/01-database --recursive
+        //                         sleep 30
+        //                         kubectl apply -f ./infra/k8s/application-manifests --recursive
+        //                         sleep 30
+        //                         kubectl apply -f ./infra/k8s/application-manifests-prod --recursive
 
-        //                         sleep 20
-        //                         echo "Displaying the Kubernetes Deployments, Pods & Services for namespace - ${MODULE_NAMESPACE_2}"
-        //                         kubectl get deployment  -n ${MODULE_NAMESPACE_2}
-        //                         kubectl get pods        -n ${MODULE_NAMESPACE_2}
-        //                         kubectl get services    -n ${MODULE_NAMESPACE_2}
-
+        //                         sleep 30
+        //                         echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
+        //                         kubectl get all  -n ${K8S_NAMESPACE_APP}
         //                     '''
         //                 }
         //             }
@@ -526,11 +730,11 @@ pipeline {
         stage('Deploy Application on Google Cloud Kubernetes Cluster using Ansible') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'), string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY')]) {
-                        withEnv(["MODULE_NAMESPACE_1=${env.MODULE_NAMESPACE_1}","MODULE_NAMESPACE_2=${env.MODULE_NAMESPACE_2}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","PROJ_DIR=${env.WORKSPACE}"]) {
+                    withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
+                        withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","PROJ_DIR=${env.WORKSPACE}"]) {
                             sh '''
                                 # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
-                                ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "MODULE_NAMESPACE_1=${MODULE_NAMESPACE_1}" -e "MODULE_NAMESPACE_2=${MODULE_NAMESPACE_2}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "PROJ_DIR=${PROJ_DIR}"
+                                ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" -e "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" -e "RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}" -e "RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}" -e "MAILJET_API_KEY=${MAILJET_API_KEY}" -e "MAILJET_API_SECRET=${MAILJET_API_SECRET}" -e "APP_NOTIFICATION_SENDER_EMAIL=${APP_NOTIFICATION_SENDER_EMAIL}" -e "K8S_NAMESPACE_NGX=${K8S_NAMESPACE_NGX}" -e "K8S_NAMESPACE_APP=${K8S_NAMESPACE_APP}" -e "K8S_NAMESPACE_MQ=${K8S_NAMESPACE_MQ}" -e "K8S_NAMESPACE_CA=${K8S_NAMESPACE_CA}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "PROJ_DIR=${PROJ_DIR}"
                             '''
                         }
                     }
