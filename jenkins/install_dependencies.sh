@@ -15,7 +15,7 @@ then
     echo "NodeJS is already installed"
 else
     echo "Installing NodeJS & NPM"
-    # Add Docker official GPG key
+    # Add NodeJS official GPG key
     sudo apt-get update
     sudo apt-get install ca-certificates curl gnupg
     sudo mkdir -p /etc/apt/keyrings
