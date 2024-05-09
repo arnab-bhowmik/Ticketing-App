@@ -8,6 +8,32 @@ sudo apt-get update
 sudo apt-get install -y curl jq
 
 
+## Install NodeJS & NPM...
+nodejs_version_output=$(node --version 2>&1)
+if [ $? -eq 0 ]
+then
+    echo "NodeJS is already installed"
+else
+    echo "Installing NodeJS & NPM"
+    # Add Docker official GPG key
+    sudo apt-get update
+    sudo apt-get install ca-certificates curl gnupg
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+    sudo chmod a+r /etc/apt/keyrings/nodesource.gpg
+
+    # Add the repository to Apt sources
+    NODE_MAJOR=18
+    echo \
+        "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | \
+        sudo tee /etc/apt/sources.list.d/nodesource.list
+    sudo apt-get update
+
+    # Install the latest version
+    sudo apt-get install nodejs
+fi
+
+
 ## Install Skaffold...
 skaffold_version_output=$(skaffold version 2>&1)
 if [ $? -eq 0 ]
