@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Set Debug mode to print out all commands being executed
+set -x
+
 ## Switch to Root user
 echo "${SUDO_PASSWORD}" | sudo -SE su root
 whoami
@@ -95,24 +100,25 @@ else
     echo "Installing Kubectl"
     # Update the apt package index and install packages needed to use the Kubernetes apt repository
     sudo apt-get update
-    sudo apt-get install -y apt-transport-https ca-certificates
+    sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
     
     # Download the public signing key for the Kubernetes package repositories
-    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     
     # Add the appropriate Kubernetes apt repository. This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
     echo \
-    "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | \
+    "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | \
     sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
     
-    # Finally install kubectl
+    # Finally install kubelet, kubeadm and kubectl. Also, pin their version
     sudo apt-get update
-    sudo apt-get install -y kubectl
+    sudo apt-get install -y kubelet kubeadm kubectl
+    sudo apt-mark hold kubelet kubeadm kubectl
     
     # Test to ensure the version installed is as mentioned
     kubectl version --client
     
-    # Verify kubectl configuration by acesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
+    # Verify kubectl configuration by accesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
     kubectl cluster-info
 fi
 
