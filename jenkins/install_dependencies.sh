@@ -91,13 +91,13 @@ else
 fi
 
     
-## Install Kubectl...
-kubectl_version_output=$(kubectl version --client 2>&1)
+## Install Kubeadm, Kubelet & Kubectl...
+kubectl_version_output=$(kubeadm version && kubelet --version && kubectl version --client 2>&1)
 if [ $? -eq 0 ]
 then
-    echo "Kubectl is already installed"
+    echo "Kubeadm, Kubelet & Kubectl are already installed"
 else
-    echo "Installing Kubectl"
+    echo "Installing Kubeadm, Kubelet & Kubectl"
     # Update the apt package index and install packages needed to use the Kubernetes apt repository
     sudo apt-get update
     sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
@@ -112,10 +112,12 @@ else
     
     # Finally install kubelet, kubeadm and kubectl. Also, pin their version
     sudo apt-get update
-    sudo apt-get install -y kubelet kubeadm kubectl
-    sudo apt-mark hold kubelet kubeadm kubectl
+    sudo apt-get install -y kubeadm kubelet kubectl
+    sudo apt-mark hold kubeadm kubelet kubectl
     
     # Test to ensure the version installed is as mentioned
+    kubeadm version
+    kubelet --version
     kubectl version --client
     
     # Verify kubectl configuration by accesing a K8 cluster. Note:- For kubectl to do that, it needs a kubeconfig file located at ~/.kube/config
