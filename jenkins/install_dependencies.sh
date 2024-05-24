@@ -84,8 +84,29 @@ else
     sudo apt-get update
     
     # Install the latest version
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    
+    sudo apt-get install -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin
+
+    # Install the container runtime
+    sudo apt-get install -y containerd.io
+
+    # Update Containerd Config file for use with Kubernetes
+    cat <<EOF | sudo tee -a /etc/containerd/config.toml
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+    SystemdCgroup = true
+EOF
+
+    # Enable CRI plugins in the Containerd Config file
+    sudo sed -i 's/^disabled_plugins \=/\#disabled_plugins \=/g' /etc/containerd/config.toml
+
+    # Install CNI plugins required for the container runtime to execute
+    sudo mkdir -p /opt/cni/bin/
+    sudo wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
+    sudo tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.5.0.tgz
+
+    # Restart Containerd 
+    sudo systemctl restart containerd
+
     # Test the installation
     sudo docker run hello-world
 fi
