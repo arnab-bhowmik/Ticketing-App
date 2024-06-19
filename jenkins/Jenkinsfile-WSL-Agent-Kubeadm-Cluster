@@ -242,6 +242,17 @@ pipeline {
                                     kubectl get all  -n ${K8S_NAMESPACE_NGX}
 
                                     ############################### APPLICATION ###############################
+                                    ## Build the Application Docker Images via Skaffold
+                                    #skaffold build --profile dev --module ${K8S_NAMESPACE_APP} --file-output=build_artifacts.json
+                                    
+                                    ## Deploy the built artifacts on Kubernetes cluster via Skaffold
+                                    #skaffold deploy --profile dev --module ${K8S_NAMESPACE_APP} --build-artifacts=build_artifacts.json
+
+                                    ## The App Service pods might have issues connecting to their corresponding DB pods, hence scaling down and up again
+                                    #kubectl scale deployment auth-deployment order-deployment ticket-deployment expiration-deployment payment-deployment -n ${K8S_NAMESPACE_APP} --replicas=0
+                                    #sleep 30
+                                    #kubectl scale deployment auth-deployment order-deployment ticket-deployment expiration-deployment payment-deployment -n ${K8S_NAMESPACE_APP} --replicas=1
+
                                     # Build the Back-End Application Docker Images
                                     for folder in auth-service expiration-service ticket-service order-service payment-service; do
                                         docker build -t "ticketing-app-${folder}" -f "${folder}/Dockerfile" "${folder}/"
@@ -340,6 +351,10 @@ pipeline {
                                     #docker tag $imageName:latest $gcrImage
 
                                 for imageName in ticketing-app-frontend-client ticketing-app-auth-service ticketing-app-expiration-service ticketing-app-ticket-service ticketing-app-order-service ticketing-app-payment-service; do   
+                                    # Create the corresponding Google Cloud Image name
+                                    gcrImage="gcr.io/${GCP_PROJECT}/$imageName:latest"
+                                    # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
+
                                     # Tag the Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
                                     echo "Tagging the Docker image before pushing to Google Cloud Artifact Registry"
                                     docker tag $imageName:latest $gcrImage
@@ -426,6 +441,12 @@ pipeline {
                             kubectl delete secret app-notification-sender-email-address-secret -n ${K8S_NAMESPACE_APP}
 
                             ############################### APPLICATION ###############################
+                            # Delete the Persistent Volume
+                            kubectl delete pv persistence-volume-rabbitmq-storage
+
+                            # Delete the Storage Class
+                            kubectl delete storageclass rabbitmq-storage
+
                             # Delete Kubernetes Namespaces 
                             echo "Cleaning up the deployed applications & services for all kubernetes namespaces..."
                             kubectl delete namespace ${K8S_NAMESPACE_NGX}
