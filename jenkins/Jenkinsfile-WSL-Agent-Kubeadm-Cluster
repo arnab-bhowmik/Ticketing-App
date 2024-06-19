@@ -441,12 +441,6 @@ pipeline {
                             kubectl delete secret app-notification-sender-email-address-secret -n ${K8S_NAMESPACE_APP}
 
                             ############################### APPLICATION ###############################
-                            # Delete the Persistent Volume
-                            kubectl delete pv persistence-volume-rabbitmq-storage
-
-                            # Delete the Storage Class
-                            kubectl delete storageclass rabbitmq-storage
-
                             # Delete Kubernetes Namespaces 
                             echo "Cleaning up the deployed applications & services for all kubernetes namespaces..."
                             kubectl delete namespace ${K8S_NAMESPACE_NGX}
@@ -463,6 +457,12 @@ pipeline {
                             kubectl get all  -n ${K8S_NAMESPACE_MQ}
                             echo "Displaying all resources for namespace - ${K8S_NAMESPACE_CA}"
                             kubectl get all  -n ${K8S_NAMESPACE_CA}
+
+                            # Delete the Persistent Volume
+                            kubectl delete -f infra/k8s/pre-requisite-manifests-dev/rabbitmqcluster-pv.yaml
+
+                            # Delete the Storage Class
+                            kubectl delete -f infra/k8s/pre-requisite-manifests-dev/storageclass.yaml
                         '''
                         
                         // Access the environment variable from the previous stage
