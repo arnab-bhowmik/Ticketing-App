@@ -45,18 +45,6 @@ else
 fi
 
 
-## Install Skaffold...
-skaffold_version_output=$(skaffold version 2>&1)
-if [ $? -eq 0 ]
-then
-    echo "Skaffold is already installed"
-else
-    echo "Installing Skaffold"
-    curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
-    sudo install skaffold /usr/local/bin/
-fi
-
-
 ## Install Docker...
 docker_version_output=$(docker --version 2>&1)
 if [ $? -eq 0 ]
