@@ -242,22 +242,16 @@ pipeline {
                                     kubectl get all  -n ${K8S_NAMESPACE_NGX}
 
                                     ############################### APPLICATION ###############################
-                                    # List of Back-End Application sub-folders
-                                    app-folders=("auth-service" "expiration-service" "ticket-service" "order-service" "payment-service")
-
                                     # Build the Back-End Application Docker Images
-                                    for folder in "${app-folders[@]}"; do
+                                    for folder in auth-service expiration-service ticket-service order-service payment-service; do
                                         docker build -t "ticketing-app-${folder}" -f "${folder}/Dockerfile" "${folder}/"
                                     done
 
                                     # Build the Front-End Application Docker Images
                                     docker build -t ticketing-app-frontend-client -f client/Dockerfile client/
 
-                                    # List of Kubernetes Application Manifest sub-folders
-                                    app-manifest-folders=("01-database" "02-client" "03-auth-service" "04-ticket-service" "05-order-service" "06-expiration-service" "07-payment-service")
-
                                     # Deploy the Application Manifest files on Dev Kubernetes Cluster
-                                    for folder in "${app-manifest-folders[@]}"; do
+                                    for folder in 01-database 02-client 03-auth-service 04-ticket-service 05-order-service 06-expiration-service 07-payment-service; do
                                         kubectl apply -f "./infra/k8s/application-manifests/${folder}" --recursive
                                         sleep 30
                                     done
@@ -284,22 +278,27 @@ pipeline {
                             sh '''
                                 docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
 
-                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
-                                    # Extract the image name and corresponding tag
-                                    echo "Extracting the image name and corresponding tag..."
-                                    imageName=$(echo "$item" | jq -r '.imageName')
-                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                #for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+                                    ## Extract the image name and corresponding tag
+                                    #echo "Extracting the image name and corresponding tag..."
+                                    #imageName=$(echo "$item" | jq -r '.imageName')
+                                    #tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
                                     
-                                    # Tag the extracted Docker image before pushing to Docker Hub
-                                    echo "Tagging the extracted Docker image before pushing to Docker Hub"
-                                    docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
+                                    ## Tag the extracted Docker image before pushing to Docker Hub
+                                    #echo "Tagging the extracted Docker image before pushing to Docker Hub"
+                                    #docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
                                 
+                                for imageName in ticketing-app-frontend-client ticketing-app-auth-service ticketing-app-expiration-service ticketing-app-ticket-service ticketing-app-order-service ticketing-app-payment-service; do
+                                    # Tag the Docker image before pushing to Docker Hub
+                                    echo "Tagging the Docker image before pushing to Docker Hub"
+                                    docker tag $imageName:latest $DOCKER_HUB_USERNAME/$imageName:latest
+
                                     # Push the image to Docker Hub
                                     echo "Pushing the image to Docker Hub"
                                     docker push $DOCKER_HUB_USERNAME/$imageName:latest
                                 
                                     # Print the results & delete the :latest tagged image
-                                    echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
+                                    echo "Pushed image $imageName to Docker Hub with tag as latest"
                                     docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
                                     
                                     # Save the image name as environment variable to access later for cleanup
@@ -326,19 +325,24 @@ pipeline {
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
-                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
-                                    # Extract the image name and corresponding tag
-                                    echo "Extracting the image name and corresponding tag..."
-                                    imageName=$(echo "$item" | jq -r '.imageName')
-                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                #for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+                                    ## Extract the image name and corresponding tag
+                                    #echo "Extracting the image name and corresponding tag..."
+                                    #imageName=$(echo "$item" | jq -r '.imageName')
+                                    #tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
 
-                                    # Create the corresponding Google Cloud Image name
-                                    gcrImage="gcr.io/${GCP_PROJECT}/$imageName:latest"
+                                    ## Create the corresponding Google Cloud Image name
+                                    #gcrImage="gcr.io/${GCP_PROJECT}/$imageName:latest"
                                     # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
-                                    
-                                    # Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
-                                    echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
-                                    docker tag $imageName:$tag $gcrImage
+
+                                    ## Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
+                                    #echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
+                                    #docker tag $imageName:latest $gcrImage
+
+                                for imageName in ticketing-app-frontend-client ticketing-app-auth-service ticketing-app-expiration-service ticketing-app-ticket-service ticketing-app-order-service ticketing-app-payment-service; do   
+                                    # Tag the Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
+                                    echo "Tagging the Docker image before pushing to Google Cloud Artifact Registry"
+                                    docker tag $imageName:latest $gcrImage
                                 
                                     # Push the image to Google Cloud Artifact Registry using service account 
                                     # Ensure the service account has correct access - artifactregistry.writer & artifactregistry.reader on the Container/Artifact Registry
@@ -346,7 +350,7 @@ pipeline {
                                     docker push $gcrImage
                                 
                                     # Print the results & delete the :latest tagged image
-                                    echo "Pushed image $imageName with tag $tag to Google Cloud Artifact Registry with tag as latest"
+                                    echo "Pushed image $imageName to Google Cloud Artifact Registry with tag as latest"
                                     docker rmi $gcrImage
 
                                     # Replace the image name in the corresponding Kubernetes deployment manifest file
@@ -592,11 +596,8 @@ pipeline {
                                 kubectl get all  -n ${K8S_NAMESPACE_NGX}
                                 
                                 ############################### APPLICATION ###############################
-                                # List of Kubernetes Application Manifest sub-folders
-                                app-manifest-folders=("01-database" "02-client" "03-auth-service" "04-ticket-service" "05-order-service" "06-expiration-service" "07-payment-service")
-        
                                 # Deploy the Application Manifest files on Google Cloud Kubernetes Cluster
-                                for folder in "${app-manifest-folders[@]}"; do
+                                for folder in 01-database 02-client 03-auth-service 04-ticket-service 05-order-service 06-expiration-service 07-payment-service; do
                                     kubectl apply -f "./infra/k8s/application-manifests/${folder}" --recursive
                                     sleep 30
                                 done

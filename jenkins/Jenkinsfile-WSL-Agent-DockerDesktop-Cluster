@@ -26,7 +26,7 @@ pipeline {
         // stage('Install required tools on Agent Node') {
         //     steps {
         //         withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
-        //             sh '''#!/bin/bash
+        //             sh '''
         //                 ## Switch to Root user
         //                 echo "${SUDO_PASSWORD}" | sudo -SE su root
         //                 whoami
@@ -191,7 +191,7 @@ pipeline {
         stage('Install Version Control Tool on Agent Node') {
             steps {
                 withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
-                    sh '''#!/bin/bash
+                    sh '''
                         ## Switch to Root user
                         echo "${SUDO_PASSWORD}" | sudo -SE su root
                         whoami
@@ -224,7 +224,7 @@ pipeline {
                     dir("${env.WORKSPACE}/jenkins"){
                         echo "Current Directory is:"
                         sh "pwd"
-                        sh '''#!/bin/bash
+                        sh '''
                         ## Switch to Root user
                         echo "${SUDO_PASSWORD}" | sudo -SE su root
                         whoami
@@ -328,7 +328,7 @@ pipeline {
                                 echo "Current Directory is:"
                                 sh "pwd"
                                 
-                                sh '''#!/bin/bash
+                                sh '''
                                     # Check the available Kubernetes contexts
                                     kubectl config get-contexts
                                     
@@ -418,22 +418,16 @@ pipeline {
                                     #sleep 30
                                     #kubectl scale deployment auth-deployment order-deployment ticket-deployment expiration-deployment payment-deployment -n ${K8S_NAMESPACE_APP} --replicas=1
 
-                                    # List of Back-End Application sub-folders
-                                    app-folders=("auth-service" "expiration-service" "ticket-service" "order-service" "payment-service")
-
                                     # Build the Back-End Application Docker Images
-                                    for folder in "${app-folders[@]}"; do
+                                    for folder in auth-service expiration-service ticket-service order-service payment-service; do
                                         docker build -t "ticketing-app-${folder}" -f "${folder}/Dockerfile" "${folder}/"
                                     done
 
                                     # Build the Front-End Application Docker Images
                                     docker build -t ticketing-app-frontend-client -f client/Dockerfile client/
 
-                                    # List of Kubernetes Application Manifest sub-folders
-                                    app-manifest-folders=("01-database" "02-client" "03-auth-service" "04-ticket-service" "05-order-service" "06-expiration-service" "07-payment-service")
-
                                     # Deploy the Application Manifest files on Dev Kubernetes Cluster
-                                    for folder in "${app-manifest-folders[@]}"; do
+                                    for folder in 01-database 02-client 03-auth-service 04-ticket-service 05-order-service 06-expiration-service 07-payment-service; do
                                         kubectl apply -f "./infra/k8s/application-manifests/${folder}" --recursive
                                         sleep 30
                                     done
@@ -457,25 +451,30 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                         withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
-                            sh '''#!/bin/bash
+                            sh '''
                                 docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
 
-                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
-                                    # Extract the image name and corresponding tag
-                                    echo "Extracting the image name and corresponding tag..."
-                                    imageName=$(echo "$item" | jq -r '.imageName')
-                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                #for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+                                    ## Extract the image name and corresponding tag
+                                    #echo "Extracting the image name and corresponding tag..."
+                                    #imageName=$(echo "$item" | jq -r '.imageName')
+                                    #tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
                                     
-                                    # Tag the extracted Docker image before pushing to Docker Hub
-                                    echo "Tagging the extracted Docker image before pushing to Docker Hub"
-                                    docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
+                                    ## Tag the extracted Docker image before pushing to Docker Hub
+                                    #echo "Tagging the extracted Docker image before pushing to Docker Hub"
+                                    #docker tag $imageName:$tag $DOCKER_HUB_USERNAME/$imageName:latest
                                 
+                                for imageName in ticketing-app-frontend-client ticketing-app-auth-service ticketing-app-expiration-service ticketing-app-ticket-service ticketing-app-order-service ticketing-app-payment-service; do
+                                    # Tag the Docker image before pushing to Docker Hub
+                                    echo "Tagging the Docker image before pushing to Docker Hub"
+                                    docker tag $imageName:latest $DOCKER_HUB_USERNAME/$imageName:latest
+
                                     # Push the image to Docker Hub
                                     echo "Pushing the image to Docker Hub"
                                     docker push $DOCKER_HUB_USERNAME/$imageName:latest
                                 
                                     # Print the results & delete the :latest tagged image
-                                    echo "Pushed image $imageName with tag $tag to Docker Hub with tag as latest"
+                                    echo "Pushed image $imageName to Docker Hub with tag as latest"
                                     docker rmi $DOCKER_HUB_USERNAME/$imageName:latest
                                     
                                     # Save the image name as environment variable to access later for cleanup
@@ -498,23 +497,28 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
                         withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
-                            sh '''#!/bin/bash
+                            sh '''
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
-                                for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
-                                    # Extract the image name and corresponding tag
-                                    echo "Extracting the image name and corresponding tag..."
-                                    imageName=$(echo "$item" | jq -r '.imageName')
-                                    tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
+                                #for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
+                                    ## Extract the image name and corresponding tag
+                                    #echo "Extracting the image name and corresponding tag..."
+                                    #imageName=$(echo "$item" | jq -r '.imageName')
+                                    #tag=$(echo "$item" | jq -r '.tag | split(":")[1]')
 
-                                    # Create the corresponding Google Cloud Image name
-                                    gcrImage="gcr.io/${GCP_PROJECT}/$imageName:latest"
+                                    ## Create the corresponding Google Cloud Image name
+                                    #gcrImage="gcr.io/${GCP_PROJECT}/$imageName:latest"
                                     # gcrImage="${ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_NAME}/$imageName:latest"
-                                    
-                                    # Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
-                                    echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
-                                    docker tag $imageName:$tag $gcrImage
+
+                                    ## Tag the extracted Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
+                                    #echo "Tagging the extracted Docker image before pushing to Google Cloud Artifact Registry"
+                                    #docker tag $imageName:latest $gcrImage
+
+                                for imageName in ticketing-app-frontend-client ticketing-app-auth-service ticketing-app-expiration-service ticketing-app-ticket-service ticketing-app-order-service ticketing-app-payment-service; do   
+                                    # Tag the Docker image before pushing to Google Cloud Artifact Registry in the format gcr.io/project/repo/image:latest
+                                    echo "Tagging the Docker image before pushing to Google Cloud Artifact Registry"
+                                    docker tag $imageName:latest $gcrImage
                                 
                                     # Push the image to Google Cloud Artifact Registry using service account 
                                     # Ensure the service account has correct access - artifactregistry.writer & artifactregistry.reader on the Container/Artifact Registry
@@ -522,7 +526,7 @@ pipeline {
                                     docker push $gcrImage
                                 
                                     # Print the results & delete the :latest tagged image
-                                    echo "Pushed image $imageName with tag $tag to Google Cloud Artifact Registry with tag as latest"
+                                    echo "Pushed image $imageName to Google Cloud Artifact Registry with tag as latest"
                                     docker rmi $gcrImage
 
                                     # Replace the image name in the corresponding Kubernetes deployment manifest file
@@ -571,7 +575,7 @@ pipeline {
             steps {
                 script {
                     withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
-                        sh '''#!/bin/bash                          
+                        sh '''                          
                             # Check the available Kubernetes contexts
                             kubectl config get-contexts
                             
@@ -628,7 +632,7 @@ pipeline {
                             """
                         }
                         
-                        sh '''#!/bin/bash
+                        sh '''
                             # Get the list of container IDs for created & exited containers
                             created_container_ids=$(docker ps -aq -f status=created)
                             exited_container_ids=$(docker ps -aq -f status=exited)
@@ -665,7 +669,7 @@ pipeline {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
         //                 withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}","PROJ_DIR=${env.WORKSPACE}"]) {
-        //                     sh '''#!/bin/bash
+        //                     sh '''
         //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
         //                         ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-cluster-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}" -e "PROJ_DIR=${PROJ_DIR}"
         //                     '''
@@ -680,7 +684,7 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
                         withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}","PROJ_DIR=${env.WORKSPACE}"]) {
-                            sh '''#!/bin/bash
+                            sh '''
                                 # Ensure the service account has correct access - container.admin/container.clusterAdmin, compute.viewer and iam.serviceAccountUser
                                 ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-cluster-terraform-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}" -e "PROJ_DIR=${PROJ_DIR}"
                             '''
@@ -695,7 +699,7 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
                         withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
-                            sh '''#!/bin/bash
+                            sh '''
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
@@ -768,11 +772,8 @@ pipeline {
                                 kubectl get all  -n ${K8S_NAMESPACE_NGX}
                                 
                                 ############################### APPLICATION ###############################
-                                # List of Kubernetes Application Manifest sub-folders
-                                app-manifest-folders=("01-database" "02-client" "03-auth-service" "04-ticket-service" "05-order-service" "06-expiration-service" "07-payment-service")
-        
                                 # Deploy the Application Manifest files on Google Cloud Kubernetes Cluster
-                                for folder in "${app-manifest-folders[@]}"; do
+                                for folder in 01-database 02-client 03-auth-service 04-ticket-service 05-order-service 06-expiration-service 07-payment-service; do
                                     kubectl apply -f "./infra/k8s/application-manifests/${folder}" --recursive
                                     sleep 30
                                 done
@@ -795,7 +796,7 @@ pipeline {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
         //                 withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","PROJ_DIR=${env.WORKSPACE}"]) {
-        //                     sh '''#!/bin/bash
+        //                     sh '''
         //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
         //                         ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" -e "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" -e "RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}" -e "RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}" -e "MAILJET_API_KEY=${MAILJET_API_KEY}" -e "MAILJET_API_SECRET=${MAILJET_API_SECRET}" -e "APP_NOTIFICATION_SENDER_EMAIL=${APP_NOTIFICATION_SENDER_EMAIL}" -e "K8S_NAMESPACE_NGX=${K8S_NAMESPACE_NGX}" -e "K8S_NAMESPACE_APP=${K8S_NAMESPACE_APP}" -e "K8S_NAMESPACE_MQ=${K8S_NAMESPACE_MQ}" -e "K8S_NAMESPACE_CA=${K8S_NAMESPACE_CA}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "PROJ_DIR=${PROJ_DIR}"
         //                     '''
