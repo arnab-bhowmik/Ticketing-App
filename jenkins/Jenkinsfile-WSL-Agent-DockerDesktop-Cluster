@@ -26,7 +26,7 @@ pipeline {
         // stage('Install required tools on Agent Node') {
         //     steps {
         //         withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
-        //             sh '''
+        //             sh '''#!/bin/bash
         //                 ## Switch to Root user
         //                 echo "${SUDO_PASSWORD}" | sudo -SE su root
         //                 whoami
@@ -191,7 +191,7 @@ pipeline {
         stage('Install Version Control Tool on Agent Node') {
             steps {
                 withCredentials([string(credentialsId: 'wsl-agent-sudo-password', variable: 'SUDO_PASSWORD')]) {
-                    sh '''
+                    sh '''#!/bin/bash
                         ## Switch to Root user
                         echo "${SUDO_PASSWORD}" | sudo -SE su root
                         whoami
@@ -224,7 +224,7 @@ pipeline {
                     dir("${env.WORKSPACE}/jenkins"){
                         echo "Current Directory is:"
                         sh "pwd"
-                        sh '''
+                        sh '''#!/bin/bash
                         ## Switch to Root user
                         echo "${SUDO_PASSWORD}" | sudo -SE su root
                         whoami
@@ -328,7 +328,7 @@ pipeline {
                                 echo "Current Directory is:"
                                 sh "pwd"
                                 
-                                sh '''
+                                sh '''#!/bin/bash
                                     # Check the available Kubernetes contexts
                                     kubectl config get-contexts
                                     
@@ -457,7 +457,7 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                         withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}"]) {
-                            sh '''
+                            sh '''#!/bin/bash
                                 docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
 
                                 for item in $(cat build_artifacts.json | jq -c '.builds[]'); do
@@ -498,7 +498,7 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
                         withEnv(["DOCKER_IMAGE_NAMES=${env.DOCKER_IMAGE_NAMES}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","ARTIFACT_REGISTRY_NAME=${env.ARTIFACT_REGISTRY_NAME}","ARTIFACT_REGISTRY_LOCATION=${ARTIFACT_REGISTRY_LOCATION}"]) {
-                            sh '''
+                            sh '''#!/bin/bash
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
@@ -571,7 +571,7 @@ pipeline {
             steps {
                 script {
                     withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","KUBECTL_DEV_CONTEXT=${env.KUBECTL_DEV_CONTEXT}"]) {
-                        sh '''                          
+                        sh '''#!/bin/bash                          
                             # Check the available Kubernetes contexts
                             kubectl config get-contexts
                             
@@ -628,7 +628,7 @@ pipeline {
                             """
                         }
                         
-                        sh '''
+                        sh '''#!/bin/bash
                             # Get the list of container IDs for created & exited containers
                             created_container_ids=$(docker ps -aq -f status=created)
                             exited_container_ids=$(docker ps -aq -f status=exited)
@@ -665,7 +665,7 @@ pipeline {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
         //                 withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}","PROJ_DIR=${env.WORKSPACE}"]) {
-        //                     sh '''
+        //                     sh '''#!/bin/bash
         //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
         //                         ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-cluster-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}" -e "PROJ_DIR=${PROJ_DIR}"
         //                     '''
@@ -680,7 +680,7 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY')]) {
                         withEnv(["GCP_PROJECT=${env.GCP_PROJECT}","GCP_REGION=${env.GCP_REGION}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","K8S_NODE_TYPE=${env.K8S_NODE_TYPE}","K8S_NODE_COUNT=${env.K8S_NODE_COUNT}","PROJ_DIR=${env.WORKSPACE}"]) {
-                            sh '''
+                            sh '''#!/bin/bash
                                 # Ensure the service account has correct access - container.admin/container.clusterAdmin, compute.viewer and iam.serviceAccountUser
                                 ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-cluster-terraform-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "GCP_REGION=${GCP_REGION}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "K8S_NODE_TYPE=${K8S_NODE_TYPE}" -e "K8S_NODE_COUNT=${K8S_NODE_COUNT}" -e "PROJ_DIR=${PROJ_DIR}"
                             '''
@@ -695,7 +695,7 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
                         withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}"]) {                            
-                            sh '''
+                            sh '''#!/bin/bash
                                 # Authenticate with Google Cloud using a service account key
                                 gcloud auth activate-service-account --key-file=${GCLOUD_KEY}
 
@@ -795,7 +795,7 @@ pipeline {
         //         script {
         //             withCredentials([file(credentialsId: 'gke-service-account-key', variable: 'GCLOUD_KEY'),string(credentialsId: 'jwt-secret-key', variable: 'JWT_KEY'),string(credentialsId: 'rabbitmq-username', variable: 'RABBITMQ_USERNAME'),string(credentialsId: 'rabbitmq-password', variable: 'RABBITMQ_PASSWORD'),string(credentialsId: 'rzp-key-id', variable: 'RAZORPAY_KEY_ID'),string(credentialsId: 'rzp-key-secret', variable: 'RAZORPAY_KEY_SECRET'),string(credentialsId: 'mailjet-api-key', variable: 'MAILJET_API_KEY'),string(credentialsId: 'mailjet-api-secret', variable: 'MAILJET_API_SECRET'),string(credentialsId: 'notification-email-sender', variable: 'APP_NOTIFICATION_SENDER_EMAIL')]) {
         //                 withEnv(["K8S_NAMESPACE_NGX=${env.K8S_NAMESPACE_NGX}","K8S_NAMESPACE_APP=${env.K8S_NAMESPACE_APP}","GCP_PROJECT=${env.GCP_PROJECT}","K8S_CLUSTER_NAME=${env.K8S_CLUSTER_NAME}","K8S_CLUSTER_ZONE=${env.K8S_CLUSTER_ZONE}","PROJ_DIR=${env.WORKSPACE}"]) {
-        //                     sh '''
+        //                     sh '''#!/bin/bash
         //                         # Ensure the service account has correct access - container.admin/container.clusterAdmin and iam.serviceAccountUser
         //                         ansible-playbook -i ./ansible/gke-inventory.ini ./ansible/gke-deploy-playbook.yaml -e "GCLOUD_KEY=${GCLOUD_KEY}" -e "JWT_KEY=${JWT_KEY}" -e "RABBITMQ_USERNAME=${RABBITMQ_USERNAME}" -e "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}" -e "RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}" -e "RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}" -e "MAILJET_API_KEY=${MAILJET_API_KEY}" -e "MAILJET_API_SECRET=${MAILJET_API_SECRET}" -e "APP_NOTIFICATION_SENDER_EMAIL=${APP_NOTIFICATION_SENDER_EMAIL}" -e "K8S_NAMESPACE_NGX=${K8S_NAMESPACE_NGX}" -e "K8S_NAMESPACE_APP=${K8S_NAMESPACE_APP}" -e "K8S_NAMESPACE_MQ=${K8S_NAMESPACE_MQ}" -e "K8S_NAMESPACE_CA=${K8S_NAMESPACE_CA}" -e "GCP_PROJECT=${GCP_PROJECT}" -e "K8S_CLUSTER_NAME=${K8S_CLUSTER_NAME}" -e "K8S_CLUSTER_ZONE=${K8S_CLUSTER_ZONE}" -e "PROJ_DIR=${PROJ_DIR}"
         //                     '''
