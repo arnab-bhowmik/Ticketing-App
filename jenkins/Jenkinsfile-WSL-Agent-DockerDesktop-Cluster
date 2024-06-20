@@ -200,11 +200,14 @@ pipeline {
                                     echo "Displaying all resources for namespace - ${K8S_NAMESPACE_MQ}"
                                     kubectl get all  -n ${K8S_NAMESPACE_MQ}
 
-                                    # Update the StorageClass Name to hostpath (i.e. default Storage Class) while using Docker-Desktop Kubernetes Cluster
+                                    # Update the StorageClass Name to "hostpath" (i.e. default Storage Class) while using Docker-Desktop Kubernetes Cluster
                                     sed -i "s|storageClassName:.*|storageClassName: hostpath|" infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
 
                                     # Deploy the RabbitMQ Cluster. This step also creates the PersistentVolume & PersistentVolume Claim for binding the persistent volume
                                     kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
+
+                                    # Revert the StorageClass Name to "rabbitmq-storage" once RabbitMQ Cluster has been created
+                                    sed -i "s|storageClassName:.*|storageClassName: rabbitmq-storage|" infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
                                     
                                     sleep 30
                                     echo "Displaying all resources for namespace - ${K8S_NAMESPACE_APP}"
