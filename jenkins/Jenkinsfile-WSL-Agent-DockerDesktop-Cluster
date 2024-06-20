@@ -200,13 +200,10 @@ pipeline {
                                     echo "Displaying all resources for namespace - ${K8S_NAMESPACE_MQ}"
                                     kubectl get all  -n ${K8S_NAMESPACE_MQ}
 
-                                    # Deploy the StorageClass for use by RabbitMQ Cluster
-                                    kubectl apply -f infra/k8s/pre-requisite-manifests-dev/storageclass.yaml
-                                    
-                                    # Deploy the PersistentVolume for use by RabbitMQ Cluster
-                                    kubectl apply -f infra/k8s/pre-requisite-manifests-dev/rabbitmqcluster-pv.yaml
+                                    # Update the StorageClass Name to hostpath (i.e. default Storage Class) while using Docker-Desktop Kubernetes Cluster
+                                    sed -i "s|storageClassName:.*|storageClassName: hostpath|" infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
 
-                                    # Deploy the RabbitMQ Cluster. This step also creates the PersistentVolume Claim for binding the persistent volume
+                                    # Deploy the RabbitMQ Cluster. This step also creates the PersistentVolume & PersistentVolume Claim for binding the persistent volume
                                     kubectl apply -f infra/k8s/pre-requisite-manifests/02-rabbitmq-kubernetes-cluster-operator/02-rabbitmq-cluster.yaml
                                     
                                     sleep 30
@@ -457,12 +454,6 @@ pipeline {
                             kubectl get all  -n ${K8S_NAMESPACE_MQ}
                             echo "Displaying all resources for namespace - ${K8S_NAMESPACE_CA}"
                             kubectl get all  -n ${K8S_NAMESPACE_CA}
-
-                            # Delete the Persistent Volume
-                            kubectl delete -f infra/k8s/pre-requisite-manifests-dev/rabbitmqcluster-pv.yaml
-
-                            # Delete the Storage Class
-                            kubectl delete -f infra/k8s/pre-requisite-manifests-dev/storageclass.yaml
                         '''
                         
                         // Access the environment variable from the previous stage
