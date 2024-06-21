@@ -43,7 +43,7 @@ router.post('/api/orders', requireAuth, [
         const rzpOrder = await razorpay.orders.create({
             amount: orderAmount,
             currency: 'INR',
-            receipt: `Order_Receipt_For_Ticket_${ticket.title}`
+            receipt: `Order_Receipt_${ticket.id}`
         });
         if (!rzpOrder) {
             throw new BadRequestError('Issues with Razorpay Order Id creation');
